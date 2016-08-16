@@ -1,3 +1,3 @@
 # HumanEcosystemsv3
 
-To know more, browse the [https://github.com/xdxdVSxdxd/HumanEcosystemsv3/wiki](Wiki)
+To know more, browse the [Wiki](https://github.com/xdxdVSxdxd/HumanEcosystemsv3/wiki)
