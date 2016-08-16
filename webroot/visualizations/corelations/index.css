@@ -1,0 +1,31 @@
+.background {
+  fill: #000000;
+}
+
+line {
+  stroke: #444444;
+}
+
+text{
+  font-family: Helvetica;
+  font-size: 12px;
+  fill: #000000;
+  stroke: none;
+  opacity: 0.4;
+}
+text.active {
+  fill: #FF0000;
+  font-size: 16px;
+  opacity: 1;
+}
+.cell{
+
+}
+
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}

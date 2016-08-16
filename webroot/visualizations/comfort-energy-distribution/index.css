@@ -1,0 +1,37 @@
+#results .dot{
+	fill: rgba(00,150,0,0.6);
+}
+
+#results .axis path,
+#results .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+#results .dot {
+  stroke: #000;
+}
+
+#results .crosshair{
+	stroke: rgba(80,80,80,0.5);
+	stroke-width: 1;
+}
+
+#results .mean{
+	fill: rgba(255,0,0,0.6);
+}
+
+.tooltip {
+  position: absolute;
+  width: 200px;
+  height: 28px;
+  pointer-events: none;
+}
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}

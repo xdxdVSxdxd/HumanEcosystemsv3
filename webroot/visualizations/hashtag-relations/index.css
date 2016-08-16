@@ -1,0 +1,10 @@
+.linkexplore{
+	stroke: rgba(20,20,20,0.2);
+}
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}

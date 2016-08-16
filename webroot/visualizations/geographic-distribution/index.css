@@ -1,0 +1,13 @@
+#mapholder{
+  width: 100%;
+  height: 700px;
+  z-index: 100;
+}
+
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}

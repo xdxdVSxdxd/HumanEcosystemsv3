@@ -1,0 +1,31 @@
+.resultsDiv{
+	margin-top: 40px;
+	margin-bottom: 40px;
+}
+
+.resultItem{
+	background: #F2F2F2;
+	color: 222240;
+	font: 10px monospace;
+	padding: 15px;
+	margin: 20px;
+	border: 1px solid #222240;
+	-webkit-border-radius: 8px;
+	-moz-border-radius: 8px;
+	border-radius: 8px;
+}
+
+.resultContent{
+	font: 28px Helvetica, Arial, sans-serif;
+	color: #000000;
+	margin-bottom: 5px;
+}
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}
+
+
