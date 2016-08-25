@@ -4,6 +4,8 @@ namespace App\Controller;
 
 require_once ('../vendor/emotions/stopwords.php');
 
+use Cake\Datasource\ConnectionManager;
+
 use App\Controller\AppController;
 use Cake\Event\Event;
 use Cake\ORM\TableRegistry;
@@ -26,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages' ] );
 		$this->RequestHandler->renderAs($this, 'json');
 	    $this->response->type('application/json');
 	    $this->set('_serialize', true);
@@ -125,6 +127,95 @@ class ApiController extends AppController
 
 		$this->set(compact('nodes', 'links'));
 		$this->set('_serialize', ['nodes', 'links']);
+
+	}
+
+
+
+	public function getImages(){
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			if( null!==$this->request->query('limit')){
+
+				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  $this->request->query('researches') .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY ce.id DESC LIMIT 0,' . $this->request->query('limit'))->fetchAll('assoc');
+			} else {
+				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  $this->request->query('researches') .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" )')->fetchAll('assoc');
+			}
+
+			foreach ($re as $v) {
+				$o = new \stdClass();
+				$o->id = $v["id"];
+				$o->entity = $v["entity"];
+				$results[] = $o;
+			}
+			// use connectionmanager end
+
+			// calc relations
+
+			// do nodes
+			/*
+			use QueryBuilder
+			$ce = TableRegistry::get('ContentsEntities');
+
+			$q1 = $ce->find('all')->contains("Entities");
+
+			if( null!==$this->request->query('limit')){
+				$q1->where( [
+						'research_id IN' => $researcharray ,
+						"OR" => [
+							['Entities.entity LIKE' => "%png"],
+							['Entities.entity LIKE' => "%jpg"]
+						]
+						
+					] )
+	    			->select([
+	    				"id" => 'Entities.id', 
+	    				"entity" => 'Entities.entity'
+	    			])
+	    			->order(['id' => 'DESC'])
+	    			->limit(  $this->request->query('limit')  );
+			} else {
+					$q1->where( [
+						'research_id IN' => $researcharray ,
+						"OR" => [
+							['Entities.entity LIKE' => "%png"],
+							['Entities.entity LIKE' => "%jpg"]
+						]
+						
+					] )
+	    			->select([
+	    				"id" => 'Entities.id', 
+	    				"entity" => 'Entities.entity'
+	    			])
+	    			->order(['id' => 'DESC']);
+			}
+
+				
+
+	    	foreach($q1 as $s){
+	    		$o = new \stdClass();
+	    		$o->id = $s->id;
+	    		$o->entity = $s->entity;
+	    		$results[] = $o;
+	    	}
+			// do nodes end
+		
+		*/
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
 
 	}
 

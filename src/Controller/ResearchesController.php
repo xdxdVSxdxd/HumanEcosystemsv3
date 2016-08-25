@@ -43,6 +43,10 @@ class ResearchesController extends AppController
 
 		//echo("Starting Research: " . $research->id  . "\n");
 
+		$research->last_updated = new Time( 'now' );
+
+		$researches->save($research);
+
 		$querye = $researchelements->find('all', [
 		    'conditions' => ['research_id = ' => $research->id]
 		]);
@@ -57,9 +61,6 @@ class ResearchesController extends AppController
 
 		}
 
-		$research->last_updated = new Time( 'now' );
-
-		$researches->save($research);
 
 		$this->autoRender = false;
 

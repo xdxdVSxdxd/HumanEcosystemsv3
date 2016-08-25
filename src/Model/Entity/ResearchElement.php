@@ -431,6 +431,7 @@ class ResearchElement extends Entity
 
 				//echo("[" . $tag . "]");
 
+				/*
 				$urlo = "https://api.instagram.com/v1/tags/" . $tag . "/media/recent?access_token=" . $research->insta_token;
 
 
@@ -447,16 +448,19 @@ class ResearchElement extends Entity
 						$data
 					//	)
 				);
+				*/
 
 				//print_r($json);
 
-				$medias = Instagram::getMediasByTag($tag, 30);
-				$json2 = new \stdClass();
-				$json2->data =$medias;
-				
-				$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
-				$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,'');
-
+				if(trim($tag)!=""){
+					//echo("[1]" . $tag);
+					$medias = Instagram::getMediasByTag($tag, 30);
+					$json2 = new \stdClass();
+					$json2->data =$medias;
+					
+					//$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
+					$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,'');
+				}
 			}
 
 		}// end main check
@@ -516,6 +520,7 @@ class ResearchElement extends Entity
 
 				//echo("[" . $tag . "]");
 
+				/*
 				$urlo = "https://api.instagram.com/v1/users/" . $tag . "/media/recent/?access_token=" . $research->insta_token;
 
 
@@ -533,21 +538,26 @@ class ResearchElement extends Entity
 					//	)
 				);
 
+				*/
+
 				//print_r($json);
 
 				try {
 
 					//echo("[" . $tag . "]\n");
-					$medias = Instagram::getMedias($tag, 30);
-					$json2 = new \stdClass();
-					$json2->data =$medias;
+					if(trim($tag)!=""){
+						$medias = Instagram::getMedias(trim($tag), 30);
+						$json2 = new \stdClass();
+						$json2->data =$medias;
 
-					$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,$tag);
-				} catch (InstagramScraper\Exception\InstagramException $e) {
+						$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,$tag);	
+					}
+					
+				} catch (\InstagramScraper\Exception\InstagramException $e) {
 				    echo 'Caught exception: ',  $e->getMessage(), "\n";
 				}
 				
-				$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
+				//$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
 				
 
 			}
@@ -1725,7 +1735,13 @@ class ResearchElement extends Entity
 				if(is_null($status->ownerId) || $status->ownerId=="" ){
 					$iu = Instagram::getAccount($owner);
 				} else {
-					$iu = Instagram::getAccountById($status->ownerId);
+					try{
+						if(isset($status->ownerId) && $status->ownerId!="" ){
+							$iu = Instagram::getAccountById($status->ownerId);
+						}
+					} catch (\InstagramScraper\Exception\InstagramException $e) {
+					    echo 'Caught exception: ',  $e->getMessage(), "\n";
+					}
 				}
 				//print_r($iu);
 
@@ -2071,72 +2087,83 @@ class ResearchElement extends Entity
 
 
 								//con comments
-								$comments = Instagram::getMediaCommentsById($content->social_id, 10000);
+								$comments = array();
 
-									foreach($comments as $comment){
+								try{
+									if(isset($content->social_id) && $content->social_id!="" ){
+										//echo("[1]" . $content->social_id);
+										$comments = Instagram::getMediaCommentsById($content->social_id, 10000);	
+									}
+								} catch (\InstagramScraper\Exception\InstagramException $e) {
+								    echo 'Caught exception: ',  $e->getMessage(), "\n";
+								}
 
-										$id_str = $comment->user->id;
-										$name = (is_null($comment->user->fullName)?"":$comment->user->fullName);
-										$screen_name = $comment->user->username;
-										$location = "";
-										$followers_count = $comment->user->followedByCount;
-										$friends_count = $comment->user->followsCount;
-										$listed_count = 0;
-										$lang =  "XXX";
-										$profile_url = "https://www.instagram.com/" . $screen_name . "/";;
-										$profile_image_url = "";
-										if(isset($comment->user->profilePicUrl)){
-											$profile_image_url = $comment->user->profilePicUrl;	
-										}
-										
+									if(isset($comments) && is_array($comments)){
+										foreach($comments as $comment){
+
+											$id_str = $comment->user->id;
+											$name = (is_null($comment->user->fullName)?"":$comment->user->fullName);
+											$screen_name = $comment->user->username;
+											$location = "";
+											$followers_count = $comment->user->followedByCount;
+											$friends_count = $comment->user->followsCount;
+											$listed_count = 0;
+											$lang =  "XXX";
+											$profile_url = "https://www.instagram.com/" . $screen_name . "/";;
+											$profile_image_url = "";
+											if(isset($comment->user->profilePicUrl)){
+												$profile_image_url = $comment->user->profilePicUrl;	
+											}
+											
 
 
-										$query = $subjects->find('all', [
-										    'conditions' => ['profile_url =' => $profile_url]
-										]);
-
-										$subject2 = $query->first();
-
-										if(is_null($subject2)){
-											$subject2 = $subjects->newEntity();
-										}
-
-										$subject2->research_element_id = $research_element_id;
-										$subject2->research_id = $research_id;
-										$subject2->social_id = $id_str;
-										$subject2->name = $name;
-										$subject2->screen_name = $screen_name;
-										$subject2->profile_url = $profile_url;
-
-										if($subjects->save($subject2)){
-											//
-											$query = $relations->find('all', [
-											    'conditions' => [
-											    	'research_element_id =' => $research_element_id,
-											    	'research_id =' => $research_id,
-											    	'subject_1_id' => $subject->id,
-											    	'subject_2_id' => $subject2->id
-											    ]
+											$query = $subjects->find('all', [
+											    'conditions' => ['profile_url =' => $profile_url]
 											]);
 
-											$relation = $query->first();
+											$subject2 = $query->first();
 
-											if(is_null($relation)){
-												$relation = $relations->newEntity();
-												$relation->research_id = $research_id;
-												$relation->research_element_id = $research_element_id;
-												$relation->subject_1_id = $subject->id;
-												$relation->subject_2_id = $subject2->id;
-												$relation->c = 1;
-											} else {
-												if($isNewContent){
-													$relation->c = $relation->c + 1;
-												}
+											if(is_null($subject2)){
+												$subject2 = $subjects->newEntity();
 											}
 
-											$relations->save($relation);
-										}
+											$subject2->research_element_id = $research_element_id;
+											$subject2->research_id = $research_id;
+											$subject2->social_id = $id_str;
+											$subject2->name = $name;
+											$subject2->screen_name = $screen_name;
+											$subject2->profile_url = $profile_url;
 
+											if($subjects->save($subject2)){
+												//
+												$query = $relations->find('all', [
+												    'conditions' => [
+												    	'research_element_id =' => $research_element_id,
+												    	'research_id =' => $research_id,
+												    	'subject_1_id' => $subject->id,
+												    	'subject_2_id' => $subject2->id
+												    ]
+												]);
+
+												$relation = $query->first();
+
+												if(is_null($relation)){
+													$relation = $relations->newEntity();
+													$relation->research_id = $research_id;
+													$relation->research_element_id = $research_element_id;
+													$relation->subject_1_id = $subject->id;
+													$relation->subject_2_id = $subject2->id;
+													$relation->c = 1;
+												} else {
+													if($isNewContent){
+														$relation->c = $relation->c + 1;
+													}
+												}
+
+												$relations->save($relation);
+											}
+
+										}
 									}
 								// con comments - fine
 
