@@ -28,7 +28,14 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy' ] );
+		
+		$this->response->header('Access-Control-Allow-Origin','*');
+        $this->response->header('Access-Control-Allow-Methods','*');
+        $this->response->header('Access-Control-Allow-Headers','X-Requested-With');
+        $this->response->header('Access-Control-Allow-Headers','Content-Type, x-xsrf-token');
+        $this->response->header('Access-Control-Max-Age','172800');
+
 		$this->RequestHandler->renderAs($this, 'json');
 	    $this->response->type('application/json');
 	    $this->set('_serialize', true);
@@ -130,6 +137,290 @@ class ApiController extends AppController
 
 	}
 
+
+
+	public function getMaxMinComfortEnergyPerResearch(){
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			$comforts = array();
+			$energies = array();
+
+			
+			// return all the latest ones
+			$querystring = 'SELECT MAX(comfort) as maxcomfort, MIN(comfort) as mincomfort, MAX(energy) as maxenergy, MIN(energy) as minenergy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ')';
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$o = new \stdClass();
+					$o->maxcomfort = $v["maxcomfort"];
+					$o->mincomfort = $v["mincomfort"];
+					$o->maxenergy = $v["maxenergy"];
+					$o->minenergy = $v["minenergy"];
+					$results[] = $o;
+				}	
+			}
+			
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+	public function getContentByComfortEnergy(){
+		$results = array();
+
+		$delta = 50;
+		if(!is_null($this->request->query('delta'))  && $this->request->query('delta')!="" ){
+			$delta = $this->request->query('delta');
+		}
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			$comforts = array();
+			$energies = array();
+
+			if(!is_null($this->request->query('comfort'))  && $this->request->query('comfort')!="" ){
+				$comforts = explode(",", $this->request->query('comfort'));
+			}
+
+			if(!is_null($this->request->query('energy'))  && $this->request->query('energy')!="" ){
+				$energies = explode(",", $this->request->query('energy'));
+			}
+
+			$querystring = "";
+
+			if( count($comforts)>0 && count($energies)>0 && count($comforts)==count($energies)  ){
+				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND (';
+
+				for($k = 0 ; $k<count($comforts);$k++){
+					$querystring = $querystring . 
+									" ( c.comfort>" . ($comforts[$k]-$delta) . 
+									" AND " .
+									" c.comfort<" . ($comforts[$k]+$delta) . 
+									" AND c.energy>" . ($energies[$k]-$delta) . 
+									" AND " .
+									" c.energy<" . ($energies[$k]+$delta) . " ) ";
+					if($k<(count($comforts)-1) ){
+						$querystring = $querystring . " OR ";
+					}
+				}
+
+				$querystring = $querystring . " ) LIMIT 0,100 ";
+
+			} else if ( count($comforts)==0  && count($energies)==0 ){
+
+				// return all the latest ones
+				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') LIMIT 0,100';
+
+			}
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$o = new \stdClass();
+					$o->id = $v["id"];
+					$o->content = $v["content"];
+					$o->comfort = $v["comfort"];
+					$o->energy = $v["energy"];
+					$results[] = $o;
+				}	
+			}
+			
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+
+
+	public function getImagesByComfortEnergy(){
+		$results = array();
+
+		$delta = 50;
+		if(!is_null($this->request->query('delta'))  && $this->request->query('delta')!="" ){
+			$delta = $this->request->query('delta');
+		}
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			$comforts = array();
+			$energies = array();
+
+			if(!is_null($this->request->query('comfort'))  && $this->request->query('comfort')!="" ){
+				$comforts = explode(",", $this->request->query('comfort'));
+			}
+
+			if(!is_null($this->request->query('energy'))  && $this->request->query('energy')!="" ){
+				$energies = explode(",", $this->request->query('energy'));
+			}
+
+			$querystring = "";
+
+			if( count($comforts)>0 && count($energies)>0 && count($comforts)==count($energies)  ){
+				$querystring = 'SELECT e.entity as entity ,c.comfort as comfort,c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND (e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) AND (';
+
+				for($k = 0 ; $k<count($comforts);$k++){
+					$querystring = $querystring . 
+									" ( c.comfort>" . ($comforts[$k]-$delta) . 
+									" AND " .
+									" c.comfort<" . ($comforts[$k]+$delta) . 
+									" AND c.energy>" . ($energies[$k]-$delta) . 
+									" AND " .
+									" c.energy<" . ($energies[$k]+$delta) . " ) ";
+					if($k<(count($comforts)-1) ){
+						$querystring = $querystring . " OR ";
+					}
+				}
+
+				$querystring = $querystring . " ) ORDER BY c.created_at DESC LIMIT 0,100 ";
+
+			} else if ( count($comforts)==0  && count($energies)==0 ){
+
+				// return all the latest ones
+				$querystring = 'SELECT e.entity as entity ,c.comfort as comfort,c.energy as energy  FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND (e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY c.created_at DESC LIMIT 0,100';
+
+			}
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$o = new \stdClass();
+					$o->entity = $v["entity"];
+					$o->comfort = $v["comfort"];
+					$o->energy = $v["energy"];
+					$results[] = $o;
+				}	
+			}
+			
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+
+
+	public function getNumberOfSubjects(){
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			$re = $connection->execute('SELECT count(*) as c FROM subjects s WHERE s.research_id IN (' .  $this->request->query('researches') .  ')')->fetchAll('assoc');
+			
+			foreach ($re as $v) {
+				$o = new \stdClass();
+				$o->c = $v["c"];
+				$results[] = $o;
+			}
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+	public function getRecent(){
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$results = array();
+
+			$re = $connection->execute('SELECT count(*) as c FROM contents s WHERE s.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL 10 MINUTE)')->fetchAll('assoc');
+			
+			foreach ($re as $v) {
+				$o = new \stdClass();
+				$o->c = $v["c"];
+				$results[] = $o;
+			}
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
 
 
 	public function getImages(){

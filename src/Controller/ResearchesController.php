@@ -28,7 +28,31 @@ class ResearchesController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( [ 'controller' => 'researches' , 'action' => 'process' ] );
+		$this->Auth->allow( [ 'process', 'processsingle' ] );
+	}
+
+	public function processsingle(){
+		$researches = TableRegistry::get('Researches');
+		$researchelements = TableRegistry::get('ResearchElements');
+
+		echo("research ID:" . $this->request->query('id') );
+
+		$querye = $researchelements->find('all', [
+		    'conditions' => ['research_id = ' => $this->request->query('id')]
+		]);
+
+		foreach($querye as $re){
+			$reid = $re->id;
+
+			echo("Starting Research Element: " . $re->id  . "\n");
+
+
+			$re->process($reid);
+
+		}
+
+		$this->autoRender = false;
+
 	}
 
 	public function process(){
@@ -38,6 +62,10 @@ class ResearchesController extends AppController
 		$query = $researches->find('all', [
 		    'order' => ['last_updated' => 'ASC']
 		]);
+
+		$query->matching('ResearchElements', function ($q) {
+		    return $q->where(['ResearchElements.active' => 1]);
+		});
 
 		$research = $query->first();
 

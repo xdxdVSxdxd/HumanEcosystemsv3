@@ -2013,7 +2013,12 @@ class ResearchElement extends Entity
 
 									foreach($mentions[1] as $mention){
 
-										$iu2 = Instagram::searchAccountsByUsername($mention);
+										$iu2 = null;
+										try{
+											$iu2 = Instagram::searchAccountsByUsername($mention);
+										} catch (\InstagramScraper\Exception\InstagramException $e) {
+										    echo 'Caught exception: ',  $e->getMessage(), "\n";
+										}
 
 										if(!is_null($iu2) && is_object($iu2)){
 											print_r($iu2);
