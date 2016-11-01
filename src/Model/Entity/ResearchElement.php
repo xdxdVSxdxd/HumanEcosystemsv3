@@ -124,7 +124,11 @@ class ResearchElement extends Entity
 
 			if($researchelement->lat!=-999 && $researchelement->lng!=-999 ){
 				//$params["geocode"] = $researchelement->lat . "," . $researchelement->lng . ",50mi"; 
-				$params["q"] = $params["q"] . "&geocode=" . $researchelement->lat . "," . $researchelement->lng . ",50mi";
+				if($params["q"] == "q=*"){
+					$params["q"] = "geocode=" . $researchelement->lat . "," . $researchelement->lng . ",50mi";
+				} else {
+					$params["q"] = $params["q"] . "&geocode=" . $researchelement->lat . "," . $researchelement->lng . ",50mi";
+				}
 			}
 
 			if($researchelement->language!="XXX"){
@@ -139,6 +143,8 @@ class ResearchElement extends Entity
 			$params["q"] = $params["q"] . "&count=100&include_entities=true";
 
 			$cb->setReturnFormat(CODEBIRD_RETURNFORMAT_ARRAY);
+
+			//echo($params["q"]);
 
 			$reply = $cb->search_tweets($params["q"],true);
 
