@@ -9,7 +9,7 @@ use Cake\ORM\Entity;
 use App\Controller\AppController;
 use Cake\Event\Event;
 use Cake\ORM\TableRegistry;
-use App\Model\Table\ResearcheElementsTable;
+use App\Model\Table\ResearchElementsTable;
 use App\Model\Entity\ResearchElement;
 use App\Model\Table\ResearchesTable;
 use App\Model\Entity\Research;
