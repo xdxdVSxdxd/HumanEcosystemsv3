@@ -19,7 +19,7 @@ class RelationsTable extends Table
     	]);
 
     	$this->belongsTo('Researches');
-    	$this->belongsTo('ResearcheElements');
+    	$this->belongsTo('ResearchElements');
 
     }
 }
