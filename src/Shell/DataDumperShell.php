@@ -6,6 +6,8 @@ use Cake\Console\Shell;
 class DataDumperShell extends Shell
 {
 
+    public $tasks = ['DailyKeywords'];
+
     /**
      * Start the shell and interactive console.
      *
@@ -14,11 +16,6 @@ class DataDumperShell extends Shell
     public function main()
     {
         $this->out("Hello: DataDumper functioning correctly.");
-        return 0;
-    }
-
-    public function dumpDailyKeywords($researches = -1){
-
         return 0;
     }
 
