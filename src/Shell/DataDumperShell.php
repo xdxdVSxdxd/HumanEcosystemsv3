@@ -16,6 +16,7 @@ class DataDumperShell extends Shell
     public function main()
     {
         $this->out("Hello: DataDumper functioning correctly.");
+        $this->DailyKeywords->dump();
         return 0;
     }
 
