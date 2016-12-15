@@ -88,7 +88,7 @@ class DailyKeywordsTask extends Shell
 
 		$jsoncontent = json_encode( $children );
 		$now = Time::now();
-		$filename = "DumpedData/" . $now->i18nFormat('yyyy-MM-dd-HH-mm-ss') . "-DailyKeywords.json";
+		$filename = "webroot/DumpedData/" . $now->i18nFormat('yyyy-MM-dd-HH-mm-ss') . "-DailyKeywords.json";
 		$this->createFile($filename, $jsoncontent);
     }
 }

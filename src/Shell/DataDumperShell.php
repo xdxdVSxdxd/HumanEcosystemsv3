@@ -6,7 +6,7 @@ use Cake\Console\Shell;
 class DataDumperShell extends Shell
 {
 
-    public $tasks = ['DailyKeywords'];
+    public $tasks = ['DailyKeywords','DailyKeywordRelations'];
 
     /**
      * Start the shell and interactive console.
@@ -17,6 +17,7 @@ class DataDumperShell extends Shell
     {
         $this->out("Hello: DataDumper functioning correctly.");
         $this->DailyKeywords->dump();
+        $this->DailyKeywordRelations->dump();
         return 0;
     }
 
