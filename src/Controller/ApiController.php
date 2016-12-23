@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline' ] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -844,6 +844,144 @@ class ApiController extends AppController
 			$lab = $o->emotion_label;
 			unset($o->emotion_type_id);
 			unset($o->emotion_label);
+			$restot[$lab][] = $o;
+		}
+
+		$results = $restot;
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+	function getMultipleKeywordsTimeline(){
+
+		$results = array();
+		$et = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('keywords'))  && $this->request->query('keywords')!="" ){
+
+			$et = explode(",", $this->request->query('keywords') );
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$contents = TableRegistry::get('Contents');
+
+			for($k = 0; $k<count($et) ; $k++){
+
+				$et[$k] = strtoupper($et[$k]);
+
+				$q1 = null;
+
+				$conditions = array();
+				$conditions['Contents.research_id IN'] = $researcharray;
+				$conditions['UCASE(Contents.content) LIKE'] =  '%' . $et[$k] . '%';
+
+				$q1 = $contents->find('all');
+
+				$q1->select([
+						'd' => 'DAY(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'm' => 'MONTH(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'y' => 'YEAR(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'value' => $q1->func()->count('Contents.id')
+					])
+					->where( $conditions )
+					->group(
+						[
+							'YEAR(Contents.created_at)', 'MONTH(Contents.created_at)', 'DAY(Contents.created_at)'
+						]
+					)
+					->order(['Contents.created_at' => 'DESC']);
+
+				foreach($q1 as $c){
+					$o = new \stdClass();
+					$o->class = $et[$k];
+
+					$o->class_label = $et[$k];
+
+					$o->date =  ($c->d<10?"0":"") . $c->d . "-" . ($c->m<10?"0":"") . $c->m . "-" . ($c->y<100?"19":"") . $c->y ;
+					$o->close = $c->value;
+					$results[] = $o;
+				}
+				//foreach
+
+			}
+
+		}
+
+		$restot = array();
+		foreach ($results as $o) {
+			$lab = $o->class_label;
+			unset($o->class);
+			unset($o->class_label);
+			$restot[$lab][] = $o;
+		}
+
+		$results = $restot;
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+	function getDesireTimeline(){
+
+		$results = array();
+		$et = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$contents = TableRegistry::get('Contents');
+
+
+				$q1 = null;
+
+				$conditions = array();
+				$conditions['Contents.research_id IN'] = $researcharray;
+				$conditions['Contents.comfort >'] =  '100';
+				$conditions['Contents.energy >'] =  '100';
+
+				$q1 = $contents->find('all');
+
+				$q1->select([
+						'd' => 'DAY(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'm' => 'MONTH(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'y' => 'YEAR(Contents.created_at)',//$q1->func()->count('emotion_type_id'),
+					    'value' => $q1->func()->count('Contents.id')
+					])
+					->where( $conditions )
+					->group(
+						[
+							'YEAR(Contents.created_at)', 'MONTH(Contents.created_at)', 'DAY(Contents.created_at)'
+						]
+					)
+					->order(['Contents.created_at' => 'DESC']);
+
+				foreach($q1 as $c){
+					$o = new \stdClass();
+					$o->class = "Desiderio";
+
+					$o->class_label = "Desiderio";
+
+					$o->date =  ($c->d<10?"0":"") . $c->d . "-" . ($c->m<10?"0":"") . $c->m . "-" . ($c->y<100?"19":"") . $c->y ;
+					$o->close = $c->value;
+					$results[] = $o;
+				}
+				//foreach
+
+		}
+
+		$restot = array();
+		foreach ($results as $o) {
+			$lab = $o->class_label;
+			unset($o->class);
+			unset($o->class_label);
 			$restot[$lab][] = $o;
 		}
 

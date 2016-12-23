@@ -52,11 +52,11 @@ class DumperTasksTask extends Shell
 
 		if( $researches==-1 ){
 
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 1 DAY) GROUP BY s.id ORDER BY c DESC LIMIT 0,50');
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 1 DAY) GROUP BY s.id ORDER BY n DESC LIMIT 0,50');
 			
 		}else{
 			
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY c DESC LIMIT 0,50');    
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 1 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY n DESC LIMIT 0,50');    
 
 		}
 
@@ -67,7 +67,8 @@ class DumperTasksTask extends Shell
 		    $o->screen_name = $row["screen_name"];
 		    $o->profile_url = $row["profile_url"];
 		    $o->profile_image_url = $row["profile_image_url"];
-		    $o->number = $row["c"];
+		    $o->posts = $row["c"];
+		    $o->number = $row["n"];
 		    $results[] = $o;
 		}
 
@@ -93,11 +94,11 @@ class DumperTasksTask extends Shell
 
 		if( $researches==-1 ){
 
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY s.id ORDER BY c DESC LIMIT 0,50');
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY s.id ORDER BY n DESC LIMIT 0,50');
 			
 		}else{
 			
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY c DESC LIMIT 0,50');    
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY n DESC LIMIT 0,50');    
 
 		}
 
@@ -108,7 +109,8 @@ class DumperTasksTask extends Shell
 		    $o->screen_name = $row["screen_name"];
 		    $o->profile_url = $row["profile_url"];
 		    $o->profile_image_url = $row["profile_image_url"];
-		    $o->number = $row["c"];
+		    $o->posts = $row["c"];
+		    $o->number = $row["n"];
 		    $results[] = $o;
 		}
 
@@ -133,11 +135,11 @@ class DumperTasksTask extends Shell
 
 		if( $researches==-1 ){
 
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY s.id ORDER BY c DESC LIMIT 0,50');
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) GROUP BY s.id ORDER BY n DESC LIMIT 0,50');
 			
 		}else{
 			
-			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY c DESC LIMIT 0,50');    
+			$stmt = $conn->execute('SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, count(*) as c , count(*)*(1+c.favorite_count+2*c.retweet_count) as n FROM contents c, subjects s WHERE s.id=c.subject_id AND c.created_at>=DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND c.research_id in (' . $researches . ') GROUP BY s.id ORDER BY n DESC LIMIT 0,50');    
 
 		}
 
@@ -148,7 +150,8 @@ class DumperTasksTask extends Shell
 		    $o->screen_name = $row["screen_name"];
 		    $o->profile_url = $row["profile_url"];
 		    $o->profile_image_url = $row["profile_image_url"];
-		    $o->number = $row["c"];
+		    $o->posts = $row["c"];
+		    $o->number = $row["n"];
 		    $results[] = $o;
 		}
 

@@ -625,6 +625,8 @@ class ResearchElement extends Entity
 			$wordsem[] = $word;
  		}
 
+ 		//print_r($fromTwitter);
+
 
  		$et = $emotiontypes->find('all');
  		$etypes = array();
@@ -731,6 +733,19 @@ class ResearchElement extends Entity
 					$content->language = $language;
 					$content->favorite_count = $favorite_count;
 					$content->retweet_count = $retweet_count;
+
+					if($content->retweeted && isset($content->retweeted_status) ){
+						$content->favorite_count = 0;
+						$content->retweet_count = 0;
+
+						$processRetweet = array();
+						$processRetweet["statuses"] = array();
+						$processRetweet["statuses"][] = $content->retweeted_status;
+
+						//rielaborare?
+						
+					}
+
 					$content->lat = $lat;
 					$content->lng = $lng;
 
