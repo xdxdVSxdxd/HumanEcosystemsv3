@@ -734,7 +734,14 @@ class ResearchElement extends Entity
 					$content->favorite_count = $favorite_count;
 					$content->retweet_count = $retweet_count;
 
-					if($content->retweeted && isset($content->retweeted_status) ){
+					/*
+					echo('[$status["retweeted"]>>' . $status["retweeted"] . ']');
+					if($status["retweeted"]){
+						print_r($status["retweeted_status"]);
+					}
+					*/
+
+					if($status["retweeted"] && isset($status["retweeted_status"]) ){
 						$content->favorite_count = 0;
 						$content->retweet_count = 0;
 
@@ -743,6 +750,10 @@ class ResearchElement extends Entity
 						$processRetweet["statuses"][] = $content->retweeted_status;
 
 						//rielaborare?
+
+						process_tweets($processRetweet,$research_id, $research_element_id);
+
+						//echo("[it's a retweet]");
 						
 					}
 
@@ -900,6 +911,8 @@ class ResearchElement extends Entity
 
 
 						// relations con retweet, quote e mentions
+
+						//echo("[Check if needs handling retweet]");
 							
 							//con retweet - inizio
 							if(isset($status["retweeted_status"]) && is_array($status["retweeted_status"])){

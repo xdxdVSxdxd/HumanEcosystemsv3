@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers' ] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -45,6 +45,68 @@ class ApiController extends AppController
 	{
 		parent::initialize();
 	    $this->loadComponent('RequestHandler');
+	}
+
+	public function getStatistics(){
+
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('mode'))  && $this->request->query('mode')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			$mode = $this->request->query('mode');
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$interval = "1 DAY";
+			if($mode=="week"){
+				$interval = "1 WEEK";
+			} else if($mode=="month"){
+				$interval = "1 MONTH";
+			} else if($mode=="all"){
+				$interval = "1 YEAR";
+			}
+			
+			$ncontents = 0;
+			$nusers = 0;
+
+			$querystring = 'SELECT count(*) as c FROM ( SELECT  DISTINCT subject_id as s FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) a';
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$nusers = $v["c"];
+					$results["nusers"] = $nusers;
+				}	
+			}
+
+			$querystring = 'SELECT  count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$ncontents = $v["c"];
+					$results["ncontents"] = $ncontents;
+				}	
+			}
+			
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
 	}
 
 	public function getRelations(){
@@ -1176,65 +1238,69 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
+
+			$connection = ConnectionManager::get('default');
+
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			$contents = TableRegistry::get('Contents');
 
-			$q1 = null;
+			$querystring = 'SELECT  lat,lng,count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
 
-			$conditions = array();
-			$conditions['research_id IN'] = $researcharray;
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
-				$conditions['language'] = $this->request->query('language');
+
+				$querystring = $querystring . " AND language='" . $this->request->query('language') . "'";
+
 			}
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+
+			$querystring = $querystring . " GROUP BY lat,lng";
 
 			if( null!==$this->request->query('limit')){
-				$q1 = $contents->find('all');
 
-	    		$q1->select([
-	    				'lat' => 'lat', 
-	    				'lng' => 'lng',
-	    				'c' => $q1->func()->count('id'),
-	    			])
-	    			->where( $conditions )
-	    			->order(['id' => 'DESC'])
-	    			->group(
-						[
-							'lat', 'lng'
-						]
-					)
-	    			->limit(  $this->request->query('limit')  );
-			} else {
-				$q1 = $contents->find('all');
-	    		$q1->select([
-	    				'lat' => 'lat', 
-	    				'lng' => 'lng',
-	    				'c' => $q1->func()->count('id')
-	    			])
-	    			->where( $conditions )
-	    			->group(
-						[
-							'lat', 'lng'
-						]
-					)
-	    			;
+
+				$querystring = $querystring . " LIMIT 1," . $this->request->query('limit');
+
+
 			}
 
-			foreach($q1 as $c){
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $c) {
 
-				if( ($c->lat!=0 || $c->lng!=0) && ($c->lat!=-999 || $c->lng!=-999)  ){
+					if( ($c["lat"]!=0 || $c["lng"]!=0) && ($c["lat"]!=-999 || $c["lng"]!=-999)  ){
 
-					$o = new \stdClass();
-					$o->c = $c->c;
-					$o->lat = $c->lat;
-					$o->lng = $c->lng;
+						$o = new \stdClass();
+						$o->c = floatval($c["c"]);
+						$o->lat = floatval($c["lat"]);
+						$o->lng = floatval($c["lng"]);
 
-					$results[] = $o;	
-					
-				}
-				
+						$results[] = $o;	
+						
+					}
+
+				}	
 			}
-			//foreach
+
 
 		}
 
@@ -1245,92 +1311,75 @@ class ApiController extends AppController
 
 
 	function getGeoEmotionPoints(){
-
 		$results = array();
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
+
+			$connection = ConnectionManager::get('default');
+
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			$emotions = TableRegistry::get('Emotions');
 
-			$emotiontypes = TableRegistry::get('EmotionTypes');
-			$q0 = $emotiontypes->find('all');
-			$et = array();
-			foreach($q0 as $e){
-				$o = new \stdClass();
-				$o->emotion_type_id = $e->id;
-				$o->label = $e->label;
-				$et[] = $o;
-			}
+			$querystring = 'SELECT  et.id as emotion_id, et.label as label, lat,lng,count(*) as c FROM contents c , emotions e, emotion_types et WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND e.content_id=c.id AND e.emotion_type_id=et.id ';
 
-			$q1 = null;
-
-			$conditions = array();
-			$conditions['Emotions.research_id IN'] = $researcharray;
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
-				$conditions['Contents.language'] = $this->request->query('language');
+
+				$querystring = $querystring . " AND language='" . $this->request->query('language') . "'";
+
 			}
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+
+			$querystring = $querystring . " GROUP BY lat,lng";
 
 			if( null!==$this->request->query('limit')){
-				$q1 = $emotions->find('all')->contain(['Contents']);
 
-	    		$q1->select([
-	    				'emotion_type_id' => 'Emotions.emotion_type_id',
-	    				'lat' => 'Contents.lat', 
-	    				'lng' => 'Contents.lng',
-	    				'c' => $q1->func()->count('Emotions.id'),
-	    			])
-	    			->where( $conditions )
-	    			->order(['Contents.id' => 'DESC'])
-	    			->group(
-						[
-							'Contents.lat', 'Contents.lng'
-						]
-					)
-	    			->limit(  $this->request->query('limit')  );
-			} else {
-				$q1 = $emotions->find('all')->contain(['Contents']);
-	    		$q1->select([
-	    				'emotion_type_id' => 'Emotions.emotion_type_id',
-	    				'lat' => 'Contents.lat', 
-	    				'lng' => 'Contents.lng',
-	    				'c' => $q1->func()->count('Emotions.id')
-	    			])
-	    			->where( $conditions )
-	    			->group(
-						[
-							'Contents.lat', 'Contents.lng'
-						]
-					)
-	    			;
+
+				$querystring = $querystring . " LIMIT 1," . $this->request->query('limit');
+
+
 			}
 
-			foreach($q1 as $c){
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $c) {
 
-				if( ($c->lat!=0 || $c->lng!=0) && ($c->lat!=-999 || $c->lng!=-999)  ){
+					if( ($c["lat"]!=0 || $c["lng"]!=0) && ($c["lat"]!=-999 || $c["lng"]!=-999)  ){
 
-					$o = new \stdClass();
-					$o->emotion_type_id = $c->emotion_type_id;
-					$o->c = $c->c;
-					$o->lat = $c->lat;
-					$o->lng = $c->lng;
-					$o->label = "";
+						$o = new \stdClass();
+						$o->c = floatval($c["c"]);
+						$o->lat = floatval($c["lat"]);
+						$o->lng = floatval($c["lng"]);
+						$o->emotion_type_id = $c["emotion_id"];
+						$o->label = $c["label"];
 
-					$found = false;
-					for($i = 0; $i<count($et) && !$found; $i++){
-						if($et[$i]->emotion_type_id==$o->emotion_type_id){
-							$found = true;
-							$o->label = $et[$i]->label;
-						}
+						$results[] = $o;	
+						
 					}
 
-					$results[] = $o;	
-					
-				}
-				
+				}	
 			}
-			//foreach
+
 
 		}
 
@@ -1509,6 +1558,409 @@ class ApiController extends AppController
 	}
 
 
+	function getSentimentSeries(){
+
+		$results = array();
+
+		$positive = 0;
+		$negative = 0;
+		$neutral = 0;
+
+		$negative_threshold = 20;
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('sentiment'))  && $this->request->query('sentiment')!="" ){
+
+			$sentimentcondition = " AND c.comfort > " . $negative_threshold;
+			if($this->request->query('sentiment')=="negative"){
+				$sentimentcondition = "AND c.comfort < " . -$negative_threshold;
+			} else if($this->request->query('sentiment')=="neutral"){
+				$sentimentcondition = " AND c.comfort >= " . -$negative_threshold . " AND c.comfort <= " . $negative_threshold;
+			}
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+			$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d, HOUR(created_at) h";
+
+			if($this->request->query('mode')!="day"){
+				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
+			}
+
+			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			if( null!==$this->request->query('language')){
+				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+			}
+
+			$querystring = $querystring . $sentimentcondition;
+
+
+			if($this->request->query('mode')!="day"){
+				$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at)';
+			} else {
+				$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at), HOUR(created_at)';
+			}
+
+			$querystring = $querystring . ' ORDER BY created_at ASC';
+
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $ce) {
+
+					$y = $ce["y"];
+					$m = $ce["m"];
+					$d = $ce["d"];
+					$h = 0;
+					if($this->request->query('mode')=="day"){
+						$h = $ce["h"];
+					}
+					$c = $ce["c"];
+
+					$a = strptime($d . '-' . $m . '-' . $y . " " . $h . ":00", '%d-%m-%Y HH:MM');
+					$timestamp = mktime($h, 0, 0, $m, $d, $y);
+
+					//$timestamp = strtotime( $d . '-' . $m . '-' . $y . " " . $h . ":00:00");
+
+					if( null!==$this->request->query('mode') &&  ($this->request->query('mode')!="day")  ){
+						$a = strptime($d . '-' . $m . '-' . $y , '%d-%m-%Y');
+						$timestamp = mktime($h, 0, 0, $m, $d, $y);
+					}
+
+					$results[] = [$timestamp,$c];
+
+				}	
+			}
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+
+	}
+
+
+
+
+
+
+	function getActivity(){
+
+		$data = array();
+
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""  ){
+
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+			$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d, HOUR(created_at) h";
+
+			if($this->request->query('mode')!="day"){
+				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
+			}
+
+			$querystring = 'SELECT HOUR(created_at) as h, count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			if( null!==$this->request->query('language')){
+				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+			}
+
+
+				$querystring = $querystring . ' GROUP BY HOUR(created_at)';
+
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $ce) {
+
+					$h = $ce["h"];
+					$c = $ce["c"];
+
+
+					$o = new \stdClass();
+					$o->x = floatval($h);
+					$o->y = floatval($c);
+					$o->z = floatval($c);
+					$o->label = $h;
+
+					$data[] = $o;
+
+				}	
+			}
+
+
+			
+		}
+
+		$this->set(compact('data'));
+		$this->set('_serialize', ['data']);
+
+
+	}
+
+
+
+
+	function getTopUsers(){
+
+		$results = array();
+
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""  ){
+
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+
+			$querystring = 'SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, s.followers_count as followers_count, s.listed_count as listed_count, count(*) as c , avg(c.comfort) as avgcomfort, avg(c.energy) as avgenergy, count(*)*(s.followers_count+s.listed_count) as coeff FROM contents c,subjects s WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND s.id=c.subject_id ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			if( null!==$this->request->query('language')){
+				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+			}
+
+
+				$querystring = $querystring . ' GROUP BY c.subject_id ORDER BY coeff DESC LIMIT 50';
+
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $ce) {
+
+					$o = new \stdClass();
+					$o->name = $ce["name"];
+					$o->screen_name = $ce["screen_name"];
+					$o->profile_url = $ce["profile_url"];
+					$o->profile_image_url = $ce["profile_image_url"];
+					$o->followers_count = intval( $ce["followers_count"] );
+					$o->listed_count = intval(  $ce["listed_count"] );
+					$o->c = intval( $ce["c"] );
+					$o->coeff = intval( $ce["coeff"] );
+					$o->avgcomfort = intval( $ce["avgcomfort"] );
+					$o->avgenergy = intval( $ce["avgenergy"] );
+					
+					$results[] = $o;
+
+				}	
+			}
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+
+	}
+
+
+
+
+
+
+
+
+
+
+
+	function getEmotionsSeries(){
+
+		$results = array();
+
+		$positive = 0;
+		$negative = 0;
+		$neutral = 0;
+
+		$negative_threshold = 20;
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('emotion'))  && $this->request->query('emotion')!="" ){
+
+
+
+			$connection = ConnectionManager::get('default');
+
+			$emotionID = -1;
+
+			$qq = "SELECT id FROM emotion_types WHERE label='" . $this->request->query('emotion') . "'";
+
+			if($qq!=""){
+				$re1 = $connection->execute($qq)->fetchAll('assoc');
+				if($re1 && count($re1)>0){
+					$emotionID = $re1[0]["id"];
+				}
+			}
+
+
+
+			if($emotionID!=-1){
+
+				$sentimentcondition = " AND e.emotion_type_id=" . $emotionID;
+
+				$researcharray = explode(",", $this->request->query('researches')  );
+
+				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d, HOUR(created_at) h";
+
+				if($this->request->query('mode')!="day"){
+					$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
+				}
+
+				$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c , emotions e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.id=e.content_id ';
+
+				if( null!==$this->request->query('mode')){
+
+					$interval = "1 YEAR";
+
+					if($this->request->query('mode')=="day"){
+						$interval = "1 DAY";					
+					} else if($this->request->query('mode')=="week"){
+						$interval = "1 WEEK";					
+					} else if($this->request->query('mode')=="month"){
+						$interval = "1 MONTH";					
+					} else if($this->request->query('mode')=="all"){
+						$interval = "1 YEAR";					
+					}
+
+
+
+					$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+				}
+
+				if( null!==$this->request->query('language')){
+					$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				}
+
+				$querystring = $querystring . $sentimentcondition;
+
+
+				if($this->request->query('mode')!="day"){
+					$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at)';
+				} else {
+					$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at), HOUR(created_at)';
+				}
+
+				$querystring = $querystring . ' ORDER BY created_at ASC';
+
+
+				//echo($querystring);
+
+				if($querystring!=""){
+					$re = $connection->execute($querystring)->fetchAll('assoc');
+				
+					foreach ($re as $ce) {
+
+						$y = $ce["y"];
+						$m = $ce["m"];
+						$d = $ce["d"];
+						$h = 0;
+						if($this->request->query('mode')=="day"){
+							$h = $ce["h"];
+						}
+						$c = $ce["c"];
+
+						$a = strptime($d . '-' . $m . '-' . $y . " " . $h . ":00", '%d-%m-%Y HH:MM');
+						$timestamp = mktime($h, 0, 0, $m, $d, $y);
+
+						//$timestamp = strtotime( $d . '-' . $m . '-' . $y . " " . $h . ":00:00");
+
+						if( null!==$this->request->query('mode') &&  ($this->request->query('mode')!="day")  ){
+							$a = strptime($d . '-' . $m . '-' . $y , '%d-%m-%Y');
+							$timestamp = mktime($h, 0, 0, $m, $d, $y);
+						}
+
+						$results[] = [$timestamp,$c];
+
+					}	
+				}
+			}
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+
+	}
+
+
+
+
 	function getSentiment(){
 
 		$results = array();
@@ -1523,39 +1975,55 @@ class ApiController extends AppController
 
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			$ces = TableRegistry::get('Contents');
+			$connection = ConnectionManager::get('default');
 
-			$q1 = $ces
-			    ->find('all');
+			$querystring = 'SELECT comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
 
-			$conditions = ['research_id IN' => $researcharray];
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
 
 			if( null!==$this->request->query('language')){
-				$conditions = ['language' => $this->request->query('language') ];
+				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
 			}
+
+			$querystring = $querystring . ' ORDER BY id DESC';
 
 			if( null!==$this->request->query('limit')){
-				$q1
-			    ->where($conditions)
-			    ->order(['id' => 'DESC'])
-			    ->limit(  $this->request->query('limit')  );
-			} else {
-			    $q1
-			    ->where($conditions);
+				$querystring = $querystring . ' LIMIT 1,' . $this->request->query('limit');
 			}
 
+			//echo($querystring);
 
-
-
-			foreach($q1 as $ce){
-				if($ce->comfort > $negative_threshold){
-					$positive = $positive + 1;
-				} else if($ce->comfort < -$negative_threshold){
-					$negative = $negative + 1;
-				} else {
-					$neutral = $neutral + 1;
-				}
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $ce) {
+					if($ce["comfort"] > $negative_threshold){
+						$positive = $positive + 1;
+					} else if($ce["comfort"] < -$negative_threshold){
+						$negative = $negative + 1;
+					} else {
+						$neutral = $neutral + 1;
+					}
+				}	
 			}
+
 
 			
 		}
