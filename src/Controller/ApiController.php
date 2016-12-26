@@ -110,89 +110,138 @@ class ApiController extends AppController
 	}
 
 	public function getRelations(){
+		$maxweight = 1;
+
 		$nodes = array();
 		$links = array();
+
+		$results = array();
+		$resultsrel = array();
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			// calc relations
+			$connection = ConnectionManager::get('default');
 
-			// do nodes
-			$subjects = TableRegistry::get('Subjects');
+			$querystring = 'SELECT s1.id as sourceid, s1.screen_name as sourcenick , s1.profile_url as sourceurl, s2.id as targetid, s2.screen_name as targetnick , s2.profile_url as targeturl FROM subjects s1, subjects s2, relations r WHERE r.research_id IN (' .  $this->request->query('researches') .  ') AND  s1.id=r.subject_1_id AND s2.id=r.subject_2_id ';
 
-			$q1 = null;
+			if( null!==$this->request->query('mode')){
 
-			if( null!==$this->request->query('limit')){
-				$q1 = $subjects->find('all')
-					->where( ['research_id IN' => $researcharray ] )
-	    			->select(['id', 'screen_name' , 'profile_url'])
-	    			->order(['id' => 'DESC'])
-	    			->limit(  $this->request->query('limit')  );
-			} else {
-				$q1 = $subjects->find('all')
-					->where( ['research_id IN' => $researcharray ] )
-					->order(['id' => 'DESC'])
-	    			->select(['id', 'screen_name' , 'profile_url']);
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+				$querystring = $querystring . ' AND  ( ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') )  )    OR    ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) )  )  ';
 			}
 
+			$querystring = $querystring . ' ORDER BY r.id DESC ';
+
+			if( null!==$this->request->query('limit')){
+				// ripristinare?
+				//$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
+			}
+
+			
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
 				
+				$contentres = array();
 
-	    	foreach($q1 as $s){
-	    		$o = new \stdClass();
-	    		$o->id = $s->id;
-	    		$o->nick = $s->screen_name;
-	    		$o->pu = $s->profile_url;
-	    		$nodes[] = $o;
-	    	}
-			// do nodes end
+				$urls = array();
+				$rels = array();
+				$weights = array();
+
+				foreach ($re as $c) {
+				
+					
+
+					if(!isset($urls[$c["sourcenick"]])){
+						$urls[$c["sourcenick"]] = $c["sourceurl"];
+					}
+
+					if(!isset($urls[$c["targetnick"]])){
+						$urls[$c["targetnick"]] = $c["targeturl"];
+					}
+
+					if(!isset(  $rels[$c["sourcenick"]]  )){
+						$rels[$c["sourcenick"]] = array();  
+						$rels[$c["sourcenick"]][] = $c["targetnick"];
+						$weights[ 
+							$c["sourcenick"]
+							. "." 
+							. $c["targetnick"] 
+						] = 1;
+					} else {
+						if(!in_array($c["targetnick"], $rels[$c["sourcenick"]] )){
+							$rels[$c["sourcenick"]][] =  $c["targetnick"] ;
+							if(  isset(  $weights[ $c["sourcenick"] . "." . $c["targetnick"] ]  ) ){
+								$weights[ $c["sourcenick"] . "." . $c["targetnick"] ] = $weights[ $c["sourcenick"] . "." . $c["targetnick"] ] + 1;
+								if(  $weights[ $c["sourcenick"] . "." . $c["targetnick"] ] > $maxweight){
+									$maxweight = $weights[ $c["sourcenick"] . "." . $c["targetnick"] ];
+								}
+							} else {
+								$weights[ $c["sourcenick"] . "." . $c["targetnick"] ] = 1;
+							}
+						}
+					}
+				}// foreach
+
+				foreach ($urls as $n1 => $u1) {
+
+					$add = true;
+
+					$o = new \stdClass();
+					$o->id = $n1;
+					$o->nick = $n1;
+					$o->pu = $u1;
+
+					$w=1;
+					if(isset($rels[$n1])){
+						$w = count($rels[$n1]);
+
+						foreach ($rels[$n1] as $n2) {
+							$o2 = new \stdClass();
+							$o2->source = $n1;
+							$o2->target = $n2;
+							$w2 = 1;
+							if( isset( $weights[$n1 . "." . $n2]  )){
+								$w2 = $weights[$n1 . "." . $n2];
+							}
+
+							if( null!==$this->request->query('limit')){
+								if( $weights[$n1 . "." . $n2]<$maxweight/2 ){
+									$add = false;
+								}
+							}
+
+							$o2->weight = $w2;
+							if($add){ $links[] = $o2; }
+						}
+
+					}
+
+					$o->weight = $w;
+
+					if($add){ $nodes[] = $o; }
+
+				}
 
 
-			// do edges
-			$relations = TableRegistry::get('Relations');
+			} //if query empty
 
-			$q1 = $relations->find('all')
-					->where( ['research_id IN' => $researcharray ] )
-	    			->select(['id', 'subject_1_id' , 'subject_2_id' , 'c']);
 
-	    	foreach($q1 as $s){
-	    		$o = new \stdClass();
-	    		$o->id = $s->id;
-	    		$o->source = $s->subject_1_id;
-	    		$o->target = $s->subject_2_id;
-	    		$o->weight = intval( $s->c );
-	    		$links[] = $o;
-	    	}
-
-	    	//replace source,target with names, and fill in missing ones
-
-	    	for($i = count($links)-1; $i>=0; $i--){
-	    		$foundsource = false;
-	    		$foundtarget = false;
-	    		$nick = "";
-	    		for($j = 0; $j<count($nodes) && (!$foundsource || !$foundtarget); $j++){
-	    			if($nodes[$j]->id==$links[$i]->source){
-	    				$foundsource = true;
-	    				$links[$i]->source = $nodes[$j]->nick;
-	    			}
-	    			if($nodes[$j]->id==$links[$i]->target){
-	    				$foundtarget = true;
-	    				$links[$i]->target = $nodes[$j]->nick;
-	    			}
-	    		}
-	    		
-	    		if(!$foundsource || !$foundtarget){
-					array_splice($links, $i, 1);	    				
-    			}
-
-	    	}
-
-	    	//replace source,target with names, and fill in missing ones - end
-
-			// do edges end
-
+			
 		}
+
 
 		$this->set(compact('nodes', 'links'));
 		$this->set('_serialize', ['nodes', 'links']);
@@ -1391,6 +1440,8 @@ class ApiController extends AppController
 
 	function getHashtagNetwork(){
 
+		$maxweight = 0;
+
 		$nodes = array();
 		$links = array();
 
@@ -1401,95 +1452,93 @@ class ApiController extends AppController
 
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			$contents = TableRegistry::get('Contents');
+			$connection = ConnectionManager::get('default');
 
-			$q1 = $contents
-			    ->find('all');
-			
+			$querystring = 'SELECT c.id as cid, e.id as eid, e.entity as label FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			$querystring = $querystring . ' ORDER BY c.created_at DESC ';
+
 			if( null!==$this->request->query('limit')){
-				$q1->contain(['Entities'])
-			    ->matching('Entities')
-			    ->where([
-			        'Contents.research_id IN' => $researcharray,
-			        'Entities.entity_type_id' => 1
-			    ])
-			    ->order(['Contents.id' => 'DESC'])
-			    ->limit(  $this->request->query('limit')  );
-			}else{
-			    $q1->contain(['Entities'])
-			    ->matching('Entities')
-			    ->where([
-			        'Contents.research_id IN' => $researcharray,
-			        'Entities.entity_type_id' => 1
-			    ]);
+				$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
 			}
 			
-			foreach($q1 as $c){
 
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+				
 				$contentres = array();
 
-				foreach($c->entities as $e){
+				foreach ($re as $c) {
+				
+					
 
-					if($e->entity_type_id==1){
-						$o = new \stdClass();
-						$o->id = $e->id;
-						$o->label = $e->entity;
-						$o->weight = 1;
+					$o = new \stdClass();
+					$o->id = $c["eid"];
+					$o->label = $c["label"];
+					$o->weight = 1;
+					$o->cid = [ $c["cid"] ];
 
-						$found = false;
-
-						for($i = 0; $i<count($contentres)&&!$found;$i++){
-							if($contentres[$i]->id==$o->id){
-								$found = true;
-								$contentres[$i]->weight = $contentres[$i]->weight + 1;
+					// riincollare qui
+					$foundnode = false;
+					for($kk = 0 ; $kk<count($nodes) && !$foundnode; $kk++){
+						if($nodes[$kk]->label==$o->label){
+							$foundnode = true;
+							$nodes[$kk]->weight = $nodes[$kk]->weight + 1;
+							if($nodes[$kk]->weight>$maxweight){
+								$maxweight = $nodes[$kk]->weight;
+							}
+							if( !in_array( $c["cid"] , $nodes[$kk]->cid ) ){
+								$nodes[$kk]->cid[] = $c["cid"];
 							}
 						}
-
-						if(!$found){
-							$contentres[] = $o;
-						}
-
-					}					
-
-				}
-
-				foreach($contentres as $co){
-					$found = false;
-					for($i = 0; $i<count($nodes)&&!$found;$i++){
-						if($nodes[$i]->id==$co->id){
-							$found = true;
-							$nodes[$i]->weight = $nodes[$i]->weight + 1;
-						}
-					}
-					if(!$found){
-						$nodes[] = $co;
 					}
 
-				}
+					if(!$foundnode){
+						$nodes[] = $o;
+					}
+					// riincollare fino a qui
 
-				for($i=0; $i<count($contentres); $i++){
-					for($j=$i+1; $j<count($contentres); $j++){
-						$found = false;
-						for($k=0; $k<count($links)&&!$found; $k++){
-							if( $links[$k]->source==$contentres[$i]->label && $links[$k]->target==$contentres[$j]->label ){
-								$found = true;
-								$links[$k]->weight = $links[$k]->weight + 1;
-							}
-						}
-						if(!$found){
-							$o = new \stdClass();
-							$o->source = $contentres[$i]->label;
-							$o->target = $contentres[$j]->label;
-							$o->weight = 1;
-							$links[] = $o;
+				}
+				//foreach
+
+				for($i=0; $i<count($nodes);$i++){
+					for($j=$i+1; $j<count($nodes);$j++){
+						$intersect = array_intersect( $nodes[$i]->cid,$nodes[$j]->cid );
+						if(  count(  $intersect  )!=0 ){
+							$oo = new \stdClass();
+							$oo->source = $nodes[$i]->label;
+							$oo->target = $nodes[$j]->label;
+							$oo->weight = count(  $intersect  );
+							$links[] = $oo;
 						}
 					}
+					unset($nodes[$i]->cid);			
 				}
 
-			}
-			//foreach
+
+			} //if query empty
 			
 		}
+
 
 		$this->set(compact('nodes', 'links'));
 		$this->set('_serialize', ['nodes', 'links']);
@@ -1506,41 +1555,52 @@ class ApiController extends AppController
 
 			$researcharray = explode(",", $this->request->query('researches')  );
 
-			$ces = TableRegistry::get('ContentsEntities');
+			$connection = ConnectionManager::get('default');
 
-			$q1 = $ces
-			    ->find('all');
+			$querystring = 'SELECT  e.entity as entity FROM contents c , contents_entities ce , entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
 
-			if( null!==$this->request->query('limit')){
-				$q1
-			    ->contain(['Entities'])
-			    ->matching('Entities')
-			    ->where([
-			        'ContentsEntities.research_id IN' => $researcharray,
-			        'Entities.entity_type_id' => 1
-			    ])
-			    ->order(['ContentsEntities.id' => 'DESC'])
-			    ->limit(  $this->request->query('limit')  );
-			} else {
-			    $q1
-			    ->contain(['Entities'])
-			    ->matching('Entities')
-			    ->where([
-			        'ContentsEntities.research_id IN' => $researcharray,
-			        'Entities.entity_type_id' => 1
-			    ]);
-			}
 
-			foreach($q1 as $ce){
-				$label = $ce->entity->entity;
-				if(isset($results[$label])){
-					$results[$label] = $results[$label] +1;
-				} else {
-					$results[$label] = 1;
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
 				}
+
+
+
+				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
 			}
 
+			$querystring = $querystring . " ORDER BY ce.id DESC";
+	
+			if( null!==$this->request->query('limit')){
+
+				$querystring = $querystring . " LIMIT " . $this->request->query('limit');
+
+			}
+
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
 			
+				foreach ($re as $v) {
+					$label = $v["entity"];
+					if(isset($results[$label])){
+						$results[$label] = $results[$label] +1;
+					} else {
+						$results[$label] = 1;
+					}
+				}	
+			}
+
 		}
 
 
