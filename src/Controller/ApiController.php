@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries' ] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -1636,6 +1636,107 @@ class ApiController extends AppController
 			} else if($this->request->query('sentiment')=="neutral"){
 				$sentimentcondition = " AND c.comfort >= " . -$negative_threshold . " AND c.comfort <= " . $negative_threshold;
 			}
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+			$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d, HOUR(created_at) h";
+
+			if($this->request->query('mode')!="day"){
+				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
+			}
+
+			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+
+
+				$querystring = $querystring . ' AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			if( null!==$this->request->query('language')){
+				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+			}
+
+			$querystring = $querystring . $sentimentcondition;
+
+
+			if($this->request->query('mode')!="day"){
+				$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at)';
+			} else {
+				$querystring = $querystring . ' GROUP BY YEAR(created_at) , MONTH(created_at), DAY(created_at), HOUR(created_at)';
+			}
+
+			$querystring = $querystring . ' ORDER BY created_at ASC';
+
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $ce) {
+
+					$y = $ce["y"];
+					$m = $ce["m"];
+					$d = $ce["d"];
+					$h = 0;
+					if($this->request->query('mode')=="day"){
+						$h = $ce["h"];
+					}
+					$c = $ce["c"];
+
+					$a = strptime($d . '-' . $m . '-' . $y . " " . $h . ":00", '%d-%m-%Y HH:MM');
+					$timestamp = mktime($h, 0, 0, $m, $d, $y);
+
+					//$timestamp = strtotime( $d . '-' . $m . '-' . $y . " " . $h . ":00:00");
+
+					if( null!==$this->request->query('mode') &&  ($this->request->query('mode')!="day")  ){
+						$a = strptime($d . '-' . $m . '-' . $y , '%d-%m-%Y');
+						$timestamp = mktime($h, 0, 0, $m, $d, $y);
+					}
+
+					$results[] = [$timestamp,$c];
+
+				}	
+			}
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+
+	}
+
+
+
+
+
+
+	function getKeywordSeries(){
+
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('keyword'))  && $this->request->query('keyword')!="" ){
+
+			$sentimentcondition = " AND UCASE(c.content) LIKE '%" . strtoupper($this->request->query('keyword')) . "%'";
 
 			$researcharray = explode(",", $this->request->query('researches')  );
 
