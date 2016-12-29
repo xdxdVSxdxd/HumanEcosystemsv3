@@ -1,0 +1,65 @@
+#results path { 
+    stroke: steelblue;
+    stroke-width: 2px;
+    fill: none;
+}
+
+#results .axis path,
+#results .axis line {
+    fill: none;
+    stroke: grey;
+    stroke-width: 2px;
+    shape-rendering: crispEdges;
+}
+
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}
+
+.userblock{
+  padding: 20px;
+  margin: 20px;
+  margin-bottom: 40px;
+}
+
+p.user-position{
+  display: block;
+  padding-bottom: 5px;
+  padding-top: 5px;
+  font: 20px Helvetica,Arial,sans-serif;
+}
+
+.usersubcontainer{
+  overflow: hidden;
+  padding-bottom: 5px;
+}
+
+.usersubcontainer img{
+  display: block;
+  float: left;
+  width: 64px;
+  height: 64px;
+  padding: 5px;
+}
+
+.user-name{
+  float: left;
+  font: bold 30px Helvetica,Arial,sans-serif;
+  padding-left: 20px;
+}
+
+.user-nick{
+  float: left;
+  padding: 5px;
+  font: italic 10px monospace;
+}
+
+.user-count{
+  float: left;
+  padding: 5px;
+  font: italic bold 18px Helvetica,Arial,sans-serif;
+}

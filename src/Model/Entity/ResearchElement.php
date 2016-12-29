@@ -625,6 +625,8 @@ class ResearchElement extends Entity
 			$wordsem[] = $word;
  		}
 
+ 		//print_r($fromTwitter);
+
 
  		$et = $emotiontypes->find('all');
  		$etypes = array();
@@ -731,6 +733,30 @@ class ResearchElement extends Entity
 					$content->language = $language;
 					$content->favorite_count = $favorite_count;
 					$content->retweet_count = $retweet_count;
+
+					/*
+					echo('[$status["retweeted"]>>' . $status["retweeted"] . ']');
+					if($status["retweeted"]){
+						print_r($status["retweeted_status"]);
+					}
+					*/
+
+					if($status["retweeted"] && isset($status["retweeted_status"]) ){
+						$content->favorite_count = 0;
+						$content->retweet_count = 0;
+
+						$processRetweet = array();
+						$processRetweet["statuses"] = array();
+						$processRetweet["statuses"][] = $content->retweeted_status;
+
+						//rielaborare?
+
+						process_tweets($processRetweet,$research_id, $research_element_id);
+
+						//echo("[it's a retweet]");
+						
+					}
+
 					$content->lat = $lat;
 					$content->lng = $lng;
 
@@ -885,6 +911,8 @@ class ResearchElement extends Entity
 
 
 						// relations con retweet, quote e mentions
+
+						//echo("[Check if needs handling retweet]");
 							
 							//con retweet - inizio
 							if(isset($status["retweeted_status"]) && is_array($status["retweeted_status"])){
