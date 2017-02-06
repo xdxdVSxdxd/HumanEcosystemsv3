@@ -88,7 +88,8 @@ function getStatistics(){
         var ncontents = data.results.ncontents;
 
         var c = "<strong>Number of users</strong>:" + nusers + "<br />" +
-                "<strong>Number of content elements</strong>:" + ncontents;
+                "<strong>Number of content elements</strong>:" + ncontents + "<br />" +
+                "<a class='btn btn-default btn-xs' href='../api/getStatistics?researches=" + reserchesstring + "&mode=" + mode + "' target='_blank'>Export</a>";
 
         $("#stats").html( c ); 
 
@@ -141,6 +142,7 @@ var sentimentseriesOptions = [],
 
 function getSentimentTimeline(){
     
+    var cont = "";
 
     $.each(sentimentnames, function (i, name) {
 
@@ -161,8 +163,12 @@ function getSentimentTimeline(){
             // we keep a counter and create the chart when all the data is loaded.
             sentimentseriesCounter += 1;
 
+            cont = cont + "<a class='btn btn-default btn-xs' href='../api/getSentimentSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&sentiment=" + name.toLowerCase() + "' target='_blank'>Export " + name.toLowerCase() + " timeseries</a> ";
+
             if (sentimentseriesCounter === sentimentnames.length) {
                 sentimentseriescreateChart();
+
+                $("#sentiment-export").html(cont);
             }
         });
     });
@@ -216,6 +222,7 @@ var emotionsOptions = [],
 
 function getEmotionsTimeline(){
     
+    var cont = "";
 
     $.each(emotionsnames, function (i, name) {
 
@@ -236,8 +243,12 @@ function getEmotionsTimeline(){
             // we keep a counter and create the chart when all the data is loaded.
             emotionsCounter += 1;
 
+            cont = cont + "<a class='btn btn-default btn-xs' href='../api/getEmotionsSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&emotion=" + name + "' target='_blank'>Export " + name + " timeseries</a> ";
+
             if (emotionsCounter === emotionsnames.length) {
                 emotionscreateChart();
+
+                $("#emotions-export").html(cont);
             }
         });
     });
@@ -356,6 +367,9 @@ function getActivity(){
     });
 
 
+        var cont = "<a href='../api/getActivity?researches=" + reserchesstring + "&mode=" + mode + "' target='_blank' class='btn btn-default btn-xs'>Export</a>"
+        $("#activity-export").html(cont);
+        
     })
     .fail(function( jqxhr, textStatus, error ){
         //fare qualcosa in caso di fallimento
@@ -480,6 +494,9 @@ function getMap(){
                 }
 
                 heatmaps["all"].set('data' , datas["all"]);
+
+                var cont = "<a href='../api/getGeoPoints?researches=" + reserchesstring + "&limit=" + limit + "&language=" + language + "&mode=" + mode + "' target='_blank' class='btn btn-default btn-xs'>Export</a>";
+                $("#map-export").html(cont);
 
         
     })
@@ -629,6 +646,9 @@ function getEmotionsMap(){
                 }
 
                 $("#emotions-map-legend").html(legendhtml);
+
+                var cont = "<a href='../api/getGeoEmotionPoints?researches=" + reserchesstring + "&limit=" + limit + "&language=" + language + "&mode=" + mode + "' target='_blank' class='btn btn-default btn-xs'>Export</a>";
+                $("#emotions-map-export").html(cont);
         
     })
     .fail(function( jqxhr, textStatus, error ){
@@ -666,6 +686,9 @@ function getTopUsers(){
  
 
         $("#topusers").html( htmlstring );
+
+        var cont = "<a href='../api/getTopUsers?researches=" + reserchesstring + "&mode=" + mode + "' target='_blank' class='btn btn-default btn-xs'>Export</a>";
+        $("#topusers-export").html(cont);
 
     })
     .fail(function( jqxhr, textStatus, error ){
@@ -721,6 +744,12 @@ function getTopics( clearGraph ){
                 .style("font-size", function(d) { var vv = (2 * d.r - 8) / this.getComputedTextLength() * 24; if(vv<0){vv=0;} var v = Math.min(2 * d.r, vv); if(v<0){v=0;} return v + "px"; })
                 .attr("dy", ".35em");
 
+
+
+
+                var cont = "<a href='../api/getHashtagCloud?researches=" + reserchesstring + "&limit=" + (limit*2) +  "&language=" + language + "&mode=" + mode + "' target='_blank' class='btn btn-default btn-xs'>Export</a>";
+                $("#topics-export").html(cont);
+
         
     })
     .fail(function( jqxhr, textStatus, error ){
@@ -743,6 +772,9 @@ function redrawwords() {
     wgsvg.attr("transform",
         "translate(" + d3.event.translate + ")"
         + " scale(" + d3.event.scale + ")");
+}
+function exportTopicRelations(){
+    window.open('../api/getHashtagNetwork?researches=' + reserchesstring + '&limit=' + 3000 + '&mode=' + mode);
 }
 function getTopicRelations(clearGraph){
         $("#topic-relations").html("");
@@ -948,6 +980,9 @@ function redrawusers() {
     ugsvg.attr("transform",
         "translate(" + d3.event.translate + ")"
         + " scale(" + d3.event.scale + ")");
+}
+function exportUserRelations(){
+    window.open('../api/getRelations?researches=' + reserchesstring + '&limit=' + 3000 + '&mode=' + mode);
 }
 function getUserRelations(clearGraph){
         $("#user-relations").html("");

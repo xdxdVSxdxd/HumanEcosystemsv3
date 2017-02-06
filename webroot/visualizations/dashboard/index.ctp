@@ -55,6 +55,10 @@
 							<div class="col-md-12" id="sentiment-time">
 							</div>
 						</div>
+						<div class="row">
+							<div class="col-md-12" id="sentiment-export">
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -72,6 +76,10 @@
 			<div class="col-md-12" id="emotions">
 			</div>
 		</div>
+		<div class="row">
+			<div class="col-md-12" id="emotions-export">
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -83,6 +91,10 @@
   	<div class="panel-body">
 		<div class="row">
 			<div class="col-md-12" id="activity">
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12" id="activity-export">
 			</div>
 		</div>
 	</div>
@@ -112,6 +124,12 @@
 		<div class="col-md-6 col-xs-6" ></div>
 		<div class="col-md-6 col-xs-6" id="emotions-map-legend"></div>
 	</div>
+	<div class="row">
+		<div class="col-md-6 col-xs-6" id="map-export">
+		</div>
+		<div class="col-md-6 col-xs-6" id="emotions-map-export">
+		</div>
+	</div>
 </div>
 
 
@@ -126,6 +144,10 @@
 			<div class="col-md-12" id="topics">
 			</div>
 		</div>
+		<div class="row">
+			<div class="col-md-12" id="topics-export">
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -138,6 +160,7 @@
 		<div class="row">
 			<div class="col-md-12" id="topic-relations">
 				<a href="javascript:getTopicRelations(true);" class="btn btn-primary">OPEN</a>
+				<a href="javascript:exportTopicRelations();" class="btn btn-primary">Export</a>
 			</div>
 		</div>
 	</div>
@@ -153,6 +176,10 @@
 			<div class="col-md-12" id="topusers">
 			</div>
 		</div>
+		<div class="row">
+			<div class="col-md-12" id="topusers-export">
+			</div>
+		</div>
 	</div>
 </div>
 
@@ -166,6 +193,7 @@
 		<div class="row">
 			<div class="col-md-12" id="user-relations">
 				<a href="javascript:getUserRelations(true);" class="btn btn-primary">OPEN</a>
+				<a href="javascript:exportUserRelations();" class="btn btn-primary">Export</a>
 			</div>
 		</div>
 	</div>

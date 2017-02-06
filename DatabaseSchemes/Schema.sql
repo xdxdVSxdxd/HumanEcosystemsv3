@@ -300,6 +300,7 @@ CREATE TABLE IF NOT EXISTS `research_elements` (
   `lng` double NOT NULL,
   `language` varchar(4) NOT NULL,
   `active` tinyint(4) NOT NULL DEFAULT '0',
+  `updated_last` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `research_element_type_id` (`research_element_type_id`),
   KEY `research_id` (`research_id`)
@@ -336,7 +337,8 @@ INSERT INTO `research_element_types` (`id`, `label`) VALUES
 (3, 'hashtags'),
 (4, 'FB page'),
 (5, 'TW user'),
-(6, 'Instagram user');
+(6, 'Instagram user'),
+(7, 'FB group');
 
 -- --------------------------------------------------------
 
