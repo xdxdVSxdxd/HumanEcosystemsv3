@@ -44,8 +44,18 @@ $( document ).ready(function() {
     });
 
     $("#q1").click( function(){   q1();  } );
+    $("#q2").click( function(){   q2();  } );
+    $("#q3").click( function(){   q3();  } );
+    $("#q4").click( function(){   q4();  } );
+    $("#q5").click( function(){   q5();  } );
 
 });
+
+
+function doExport(url,label){
+    var cont = "<a href='" + url + "' target='_blank' class='btn btn-primary'>Export " + label + "</a>";
+    $("#export-div").append(cont);
+}
 
 
 function doSomething(){
@@ -63,6 +73,10 @@ function q1(){
     Q1data = [];
     Q1counter = 0;
 
+    $("#export-div").html("");
+
+    $("#explanation").html("<strong>Generi Musicali:</strong> calcolato tramite il conteggio delle mention sui vari generi musicali.");
+
     $.each(Q1names, function (i, name) {
 
         $.getJSON("../api/getKeywordSeries", { 
@@ -72,6 +86,8 @@ function q1(){
             "keyword" : name
         } , function(data){
 
+            var urlo = "../api/getKeywordSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&keyword=" + name;
+            doExport(urlo,name);
 
             for(var k = 0; k<data.results.length; k++){
                 data.results[k][0] = parseFloat( data.results[k][0] ) * 1000;
@@ -135,6 +151,321 @@ function Q1createChart(){
         });
 }
 // Q1 End
+
+
+
+
+
+// Q2
+var Q2Data;
+var Q2names = ["desire"];
+var Q2counter = 0;
+
+function q2(){
+    Q2data = null;
+    Q2data = [];
+    Q2counter = 0;
+
+    $("#export-div").html("");
+
+    $("#explanation").html("<strong>Desiderio di musica live:</strong> calcolato tramite il conteggio delle espressioni emozionali che maggiormente indicano desiderio (curiosità, aspettativa, sorpresa...).");
+
+    $.each(Q2names, function (i, name) {
+
+        $.getJSON("../api/getEmotionalBoundariesSeries", { 
+            "researches" : reserchesstring , 
+            "limit" : limit, 
+            "mode" : mode,
+            "emotion-condition" : "comfort>100 AND energy>100"
+        } , function(data){
+
+            var urlo = "../api/getEmotionalBoundariesSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&emotion-condition=comfort>100 AND energy>100";
+            doExport(urlo,"");
+
+            for(var k = 0; k<data.results.length; k++){
+                data.results[k][0] = parseFloat( data.results[k][0] ) * 1000;
+                data.results[k][1] = parseFloat( data.results[k][1] );
+            }
+
+            Q2data[i] = {
+                name: name,
+                data: data.results
+            };
+
+            // As we're loading the data asynchronously, we don't know what order it will arrive. So
+            // we keep a counter and create the chart when all the data is loaded.
+            Q2counter += 1;
+
+            if (Q2counter === Q2names.length) {
+                Q2createChart();
+            }
+        });
+    });
+}
+
+function Q2createChart(){
+    
+    $("#results").html("");
+
+    Highcharts.stockChart('results', {
+
+            rangeSelector: {
+                enabled: false
+            },
+
+            yAxis: {
+                labels: {
+                    formatter: function () {
+                        return this.value ;
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 2,
+                    color: 'silver'
+                }]
+            },
+
+            plotOptions: {
+                series: {
+                    compare: 'value',
+                    connectNulls: true,
+                    showInNavigator: true
+                }
+            },
+
+            tooltip: {
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+                valueDecimals: 2,
+                split: true
+            },
+
+            series: Q2data
+        });
+}
+// Q2 End
+
+
+
+
+
+
+
+// Q3
+var Q3Data;
+var Q3names = [
+                    "scala,auditorium,assago,magnolia,san siro,santeria,stadio",
+                    "BasementMilano,IDistratti,LeCannibale,lecannibaleclub,nul3000,FabriqueMilano,hollywoodmilano,JustCavalliClub,cavalli_milan,leoncavallospa,circolomagnolia,oldfashionclub,SanteriaMilano,tocqueville",
+                    "base_milano,avanzi,mare culturale"
+            ];
+var Q3Labels = ["Grandi venue","Piccole Venue","Centri Culturali"]
+var Q3counter = 0;
+
+function q3(){
+    Q3data = null;
+    Q3data = [];
+    Q3counter = 0;
+
+    $("#export-div").html("");
+
+    $("#explanation").html("<strong>Grandi vs Piccole venue:</strong> si confrontano le grandi venue, le venue di dimensioni minori e i centri culturali integrati. Il confronto avviene conteggiando le mention, pesate per un coefficiente proporzionale al successo dei messaggi che le contengono (ovvero proporzionale alla positività del contenuto e al numero delle condivisioni).");
+
+    $.each(Q3names, function (i, name) {
+
+        $.getJSON("../api/getMultipleMentionsSeries", { 
+            "researches" : reserchesstring , 
+            "limit" : limit, 
+            "mode" : mode,
+            "mentions" : name
+            //"weightwith" : "favorite_count"
+        } , function(data){
+
+            var urlo = "../api/getMultipleMentionsSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&mentions=" + name;
+            doExport(urlo,Q3Labels[i]);
+
+            for(var k = 0; k<data.results.length; k++){
+                data.results[k][0] = parseFloat( data.results[k][0] ) * 1000;
+                data.results[k][1] = parseFloat( data.results[k][1] );
+            }
+
+            Q3data[i] = {
+                name: Q3Labels[i],
+                data: data.results
+            };
+
+            // As we're loading the data asynchronously, we don't know what order it will arrive. So
+            // we keep a counter and create the chart when all the data is loaded.
+            Q3counter += 1;
+
+            if (Q3counter === Q3names.length) {
+                Q3createChart();
+            }
+        });
+    });
+}
+
+function Q3createChart(){
+    
+    $("#results").html("");
+
+    Highcharts.stockChart('results', {
+
+            rangeSelector: {
+                enabled: false
+            },
+
+            yAxis: {
+                labels: {
+                    formatter: function () {
+                        return this.value ;
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 2,
+                    color: 'silver'
+                }]
+            },
+
+            plotOptions: {
+                series: {
+                    compare: 'value',
+                    connectNulls: true,
+                    showInNavigator: true
+                }
+            },
+
+            tooltip: {
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+                valueDecimals: 2,
+                split: true
+            },
+
+            series: Q3data
+        });
+}
+// Q3 End
+
+
+
+// Q4
+var Q4Data;
+var Q4labels = ["Clubbing"];
+var Q4names = ["discoteca,club,dj,djset,house,elettronica,rave"];
+var Q4counter = 0;
+
+function q4(){
+    Q4data = null;
+    Q4data = [];
+    Q4counter = 0;
+
+    $("#export-div").html("");
+
+    $("#explanation").html("<strong>Clubbing:</strong> calcolato misurando le menzioni degli elementi rilevanti per il clubbing (discoteca, djset, rave, house, elettronica,...) e pesandoli in maniera proporzionale ai livelli di energia e comfort.");
+
+    $.each(Q4names, function (i, name) {
+
+        $.getJSON("../api/getMultipleMentionsSeries", { 
+            "researches" : reserchesstring , 
+            "limit" : limit, 
+            "mode" : mode, 
+            "mentions" : name,
+            "weightwith" : "(1+(1+comfort)/(1+energy))"
+        } , function(data){
+
+            var urlo = "../api/getMultipleMentionsSeries?researches=" + reserchesstring + "&limit=" + limit + "&mode=" + mode + "&mentions=" + name + "&weightwith=(1+(1+comfort)/(1+energy))";
+            doExport(urlo,Q4labels[i]);
+
+            for(var k = 0; k<data.results.length; k++){
+                data.results[k][0] = parseFloat( data.results[k][0] ) * 1000;
+                data.results[k][1] = parseFloat( data.results[k][1] );
+            }
+
+            Q4data[i] = {
+                name: Q4labels[i],
+                data: data.results
+            };
+
+            // As we're loading the data asynchronously, we don't know what order it will arrive. So
+            // we keep a counter and create the chart when all the data is loaded.
+            Q4counter += 1;
+
+            if (Q4counter === Q4names.length) {
+                Q4createChart();
+            }
+        });
+    });
+}
+
+function Q4createChart(){
+    
+    $("#results").html("");
+
+    Highcharts.stockChart('results', {
+
+            rangeSelector: {
+                enabled: false
+            },
+
+            yAxis: {
+                labels: {
+                    formatter: function () {
+                        return this.value ;
+                    }
+                },
+                plotLines: [{
+                    value: 0,
+                    width: 2,
+                    color: 'silver'
+                }]
+            },
+
+            plotOptions: {
+                series: {
+                    compare: 'value',
+                    connectNulls: true,
+                    showInNavigator: true
+                }
+            },
+
+            tooltip: {
+                pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b> ({point.change}%)<br/>',
+                valueDecimals: 2,
+                split: true
+            },
+
+            series: Q4data
+        });
+}
+// Q4 End
+
+
+
+
+
+// Q5
+function q5(){
+    $("#explanation").html("<strong>Destinazioni:</strong> Calcolato conteggiando i contenuti e le condivisioni di rilevanza geografica (quelle con coordinate o con forme linguistiche che indicano spostamento o permanenza sul territorio), e suddividendole tra i vari distretti.");
+    $("#results").html("");
+    $("#results").css("height", "500px");
+
+    var map = new google.maps.Map(document.getElementById('results'), {
+      zoom: 11,
+      center: {lat: 45.466667, lng: 9.183333}
+    });
+
+    var ctaLayer = new google.maps.KmlLayer({
+      url: 'http://164.132.225.138/~hebase/Censimento.kmz',
+      map: map
+    });
+
+    console.log(ctaLayer);
+ 
+}
+// Q4 End
+
+
+
 
 
 function exportdata(){

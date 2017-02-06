@@ -68,6 +68,9 @@ class ResearchElement extends Entity
 			} else if($researchelement->research_element_type_id==6){
 				//echo("[Element type: 6]");
 				$researchelement->instauser($id);
+			} else if($researchelement->research_element_type_id==7){
+				//echo("[Element type: 4]");
+				$researchelement->fbgroup($id);
 			}
 		}
 		// else {
@@ -459,13 +462,16 @@ class ResearchElement extends Entity
 				//print_r($json);
 
 				if(trim($tag)!=""){
-					//echo("[1]" . $tag);
-					$medias = Instagram::getMediasByTag($tag, 30);
-					$json2 = new \stdClass();
-					$json2->data =$medias;
-					
-					//$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
-					$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,'');
+					//echo("[" . $tag . "]");
+					try{
+						$medias = Instagram::getMediasByTag($tag, 30);
+						$json2 = new \stdClass();
+						$json2->data =$medias;
+
+						$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,'');
+					} catch (\Exception $ex){
+						echo("could not get Instagram tag:" . $tag);
+					}
 				}
 			}
 
@@ -559,8 +565,8 @@ class ResearchElement extends Entity
 						$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,$tag);	
 					}
 					
-				} catch (\InstagramScraper\Exception\InstagramException $e) {
-				    echo 'Caught exception: ',  $e->getMessage(), "\n";
+				} catch (\Exception $ex){
+					echo("could not get Instagram tag:" . $tag);
 				}
 				
 				//$this->process_insta_data($json,$research->id, $researchelement->id,$research->insta_token);
@@ -584,8 +590,34 @@ class ResearchElement extends Entity
 		$research = $researches->get($researchelement->research_id);
 
 		if(
-			true
-			// TODO: put facebook specific checks
+			!is_null($research->fb_app_id) &&
+			$research->fb_app_id!="" &&
+
+			!is_null($research->fb_app_secret) &&
+			$research->fb_app_secret!="" 
+		){
+			// everything set, I can do the search
+
+		}// end main check
+
+	}
+
+
+	// get content from Facebook page
+	function fbgroup($id){
+
+		//$researchelements = TableRegistry::get('ResearchElements');
+		$researchelement = $this;
+
+		$researches = TableRegistry::get('Researches');
+		$research = $researches->get($researchelement->research_id);
+
+		if(
+			!is_null($research->fb_app_id) &&
+			$research->fb_app_id!="" &&
+
+			!is_null($research->fb_app_secret) &&
+			$research->fb_app_secret!="" 
 		){
 			// everything set, I can do the search
 
@@ -815,10 +847,13 @@ class ResearchElement extends Entity
 
 
 						// urls
-						foreach($status["entities"]["urls"] as $urlentity){
+						if(isset($parts[5]) && $parts[5]!=""){
+							$urlentity = $parts[5];
 							//
 							$entity_type_id = 2;
-							$text = $urlentity["url"];
+							$text = str_replace("'", "\'", $urlentity);
+
+							$q4 = "SELECT * FROM entities WHERE entity='" . $text . "' AND entity_type_id=" . $entity_type_id;
 
 							$query = $entities->find('all', [
 							    'conditions' => [

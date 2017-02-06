@@ -64,29 +64,31 @@ class ResearchesController extends AppController
 		]);
 
 		$query->matching('ResearchElements', function ($q) {
-		    return $q->where(['ResearchElements.active' => 1]);
+		    return $q->where(['ResearchElements.active' => 1, 'ResearchElements.research_element_type_id !=' => 4, 'ResearchElements.research_element_type_id !=' => 7]);
 		});
 
 		$research = $query->first();
 
 		//echo("Starting Research: " . $research->id  . "\n");
 
-		$research->last_updated = new Time( 'now' );
+		if(isset($research) ){
+			$research->last_updated = new Time( 'now' );
 
-		$researches->save($research);
+			$researches->save($research);
 
-		$querye = $researchelements->find('all', [
-		    'conditions' => ['research_id = ' => $research->id]
-		]);
+			$querye = $researchelements->find('all', [
+			    'conditions' => ['research_id = ' => $research->id]
+			]);
 
-		foreach($querye as $re){
-			$reid = $re->id;
+			foreach($querye as $re){
+				$reid = $re->id;
 
-			//echo("Starting Research Element: " . $re->id  . "\n");
+				//echo("Starting Research Element: " . $re->id  . "\n");
 
 
-			$re->process($reid);
+				$re->process($reid);
 
+			}
 		}
 
 
