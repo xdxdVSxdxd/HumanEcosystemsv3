@@ -395,35 +395,35 @@ var styles = [
         "elementType": "geometry",
         "stylers": [
           { "visibility": "on" },
-          { "color": "#f2f2f2" }
+          { "color": "#222222" }
         ]
       },{
         "featureType": "poi",
         "elementType": "geometry",
         "stylers": [
           { "visibility": "on" },
-          { "color": "#d5d5d5" }
+          { "color": "#333333" }
         ]
       },{
         "featureType": "road",
         "elementType": "geometry",
         "stylers": [
           { "visibility": "on" },
-          { "color": "#aaaaaa" }
+          { "color": "#353535" }
         ]
       },{
         "featureType": "transit",
         "elementType": "geometry",
         "stylers": [
           { "visibility": "on" },
-          { "color": "#AAAAAA" }
+          { "color": "#404040" }
         ]
       },{
         "featureType": "water",
         "elementType": "geometry",
         "stylers": [
           { "visibility": "on" },
-          { "color": "#AAAAFF" }
+          { "color": "#424242" }
         ]
       }
     ];

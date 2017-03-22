@@ -1,0 +1,23 @@
+.arc text {
+  font: 14px sans-serif;
+  text-anchor: middle;
+  fill: #FFF;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}
+
+.pimage{
+	width: 32px;
+	height: 32px;
+	border: 0px;
+}

@@ -1,20 +1,34 @@
 var researches;
 var reserchesstring;
 
+var mode = "ALL";
+
+var classes = "rock,blues,reggae,jazz,punk,pop,italian,classica,hiphop,electronica,house,metal";
+
 
 $( document ).ready(function() {
  
     reserchesstring = getUrlParameter("researches");
     researches = reserchesstring.split(",");
 
+    $("#modeselect").val(mode);
+
     getTimeline();
+
+
+
+    $('#modeselect').on('change', function() {
+      mode = this.value;
+      $("#results").html("");
+      getTimeline();      
+    })
 
 });
 
 
 function exportdata(){
 
-    window.open("../api/getEmotionsTimeline?researches=" + reserchesstring );
+    window.open("../api/getMultipleKeywordsTimeline?researches=" + reserchesstring + "&mode=" + mode + "&keywords=" + encodeURIComponent( classes ) );
 
 }
 
@@ -42,7 +56,8 @@ function getTimeline(){
     $.getJSON("../api/getMultipleKeywordsTimeline", 
       { 
         "researches" : reserchesstring,
-        "keywords" : "elettronica,rock,house,contemporanea,blues,italiana,classica"
+        "mode" : mode,
+        "keywords" : classes
       }
     )
     .done(function(data){

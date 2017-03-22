@@ -12,6 +12,17 @@
 		<h1>Classes Timeline</h1>
 	</div>
 </div>
+<div class="row well">
+	<div class="col-md-12">
+		<strong>Select timetrame:</strong>
+		<select id="modeselect">
+			<option value="ALL">ALL</option>
+			<option value="MONTH">Last Month</option>
+			<option value="WEEK">Last Week</option>
+			<option value="DAY">Last Day</option>
+		</select>
+	</div>
+</div>
 <div class="row">
 	<div class="col-md-12">
 		<div id="results" class="padded"></div>

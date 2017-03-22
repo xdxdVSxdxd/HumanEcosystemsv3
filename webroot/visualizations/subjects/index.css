@@ -1,0 +1,60 @@
+.arc text {
+  font: 14px sans-serif;
+  text-anchor: middle;
+  fill: #FFF;
+}
+
+.arc path {
+  stroke: #fff;
+}
+
+#exporter{
+  text-align: left;
+}
+.small{
+  margin-top: 10px;
+  font: 10px monospace;
+}
+
+.overcontainer{
+	clear: both;
+    overflow: hidden;
+}
+
+.opContainer{
+	width: 200px;
+	margin-right: 20px;
+	overflow: hidden;
+	float: left;
+}
+
+.op-title{
+	font: bold 20px Helvetica,Arial,sans-serif;
+	text-align: center;
+	height: 100px;
+	overflow: hidden;
+	margin-top: 20px;
+}
+
+.op-radar{
+	width: 200px;
+	height: 200px;
+	overflow: hidden;
+	margin-bottom: 5px;
+}
+
+.op-title-small{
+	width: 200px;
+	height: 50px;
+	text-align: center;
+	font: bold 15px Helvetica,Arial,sans-serif;
+	overflow: hidden;
+}
+
+.op-ratio{
+	width: 200px;
+	height: 70px;
+	text-align: center;
+	font: bold 50px Helvetica,Arial,sans-serif;
+	overflow: hidden;
+}
