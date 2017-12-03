@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate' ] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -247,6 +247,130 @@ class ApiController extends AppController
 		$this->set('_serialize', ['nodes', 'links']);
 
 	}
+
+
+
+
+
+
+
+
+	public function getTopicTimeSeries(){
+		$results = array();
+		
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+			$querystring = 'SELECT e.entity as entity, count(*) as value, DATE(c.created_at) date FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
+
+			if( null!==$this->request->query('mode')){
+
+				$interval = "1 YEAR";
+
+				if($this->request->query('mode')=="day"){
+					$interval = "1 DAY";					
+				} else if($this->request->query('mode')=="week"){
+					$interval = "1 WEEK";					
+				} else if($this->request->query('mode')=="month"){
+					$interval = "1 MONTH";					
+				} else if($this->request->query('mode')=="all"){
+					$interval = "1 YEAR";					
+				}
+
+				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			}
+
+			
+			$querystring = $querystring . ' GROUP BY entity, date ORDER BY entity asc, date asc ';
+			
+			if( null!==$this->request->query('gt')){
+				$querystring = 'SELECT * FROM (' . $querystring . ') a WHERE value > ' . $this->request->query('gt');
+			}
+
+
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+				
+				foreach ($re as $c) {
+				
+					$o = new \stdClass();
+					$o->entity = $c["entity"];
+					$o->value = $c["value"];
+					$o->date = $c["date"];
+					$results[] = $o;
+
+					
+				}// foreach
+
+			} //if query empty
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+
+
+
+
+
+	public function getMessagesForTagAndDate(){
+		$results = array();
+		
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('day'))  && $this->request->query('day')!=""   && !is_null($this->request->query('month'))  && $this->request->query('month')!=""  && !is_null($this->request->query('year'))  && $this->request->query('year')!=""  &&  !is_null($this->request->query('entity'))  && $this->request->query('entity')!=""  ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+
+			$connection = ConnectionManager::get('default');
+
+			$querystring = 'SELECT c.link as link, c.content as content, c.comfort as comfort, c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND YEAR(created_at)=' . $this->request->query('year') . ' AND MONTH(created_at)=' . $this->request->query('month') . ' AND DAY(created_at)=' . $this->request->query('day') . ' AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity="' . $this->request->query('entity') . '" ';
+
+			
+
+			
+			$querystring = $querystring . ' ORDER BY created_at asc ';
+			
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+				
+				foreach ($re as $c) {
+				
+					$o = new \stdClass();
+					$o->link = $c["link"];
+					$o->content = $c["content"];
+					$o->comfort = $c["comfort"];
+					$o->energy = $c["energy"];
+					$results[] = $o;
+
+					
+				}// foreach
+
+			} //if query empty
+
+
+			
+		}
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+
 
 
 
