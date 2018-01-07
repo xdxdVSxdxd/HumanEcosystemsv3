@@ -143,12 +143,13 @@ class ApiController extends AppController
 				$querystring = $querystring . ' AND  ( ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') )  )    OR    ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) )  )  ';
 			}
 
+			if( null!==$this->request->query('sensibility')){
+				$querystring = $querystring . ' AND r.c>=' . $this->request->query('sensibility');
+			}
+
 			$querystring = $querystring . ' ORDER BY r.id DESC ';
 
-			if( null!==$this->request->query('limit')){
-				// ripristinare?
-				//$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
-			}
+			
 
 			
 			if($querystring!=""){
