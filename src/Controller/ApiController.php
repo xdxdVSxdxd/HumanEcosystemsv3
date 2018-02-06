@@ -145,11 +145,13 @@ class ApiController extends AppController
 			}  else {
 				$interval = "1 DAY";
 			}
+
+			//echo($interval);
 			
 			$ncontents = 0;
 			$nusers = 0;
 
-			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') ';
 
 			//echo($querystring);
 
