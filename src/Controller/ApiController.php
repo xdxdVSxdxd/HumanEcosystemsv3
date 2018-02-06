@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' ] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -108,6 +108,70 @@ class ApiController extends AppController
 		$this->set('_serialize', ['results']);
 
 	}
+
+
+
+	public function getMessagesFromTimeAgo(){
+
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('number'))  && $this->request->query('number')!=""   && !is_null($this->request->query('unit'))  && $this->request->query('unit')!=""    ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			
+
+			$number = intval( $this->request->query('number') );
+			$unit = strtoupper( $this->request->query('unit') );
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$interval = "1 DAY";
+
+			if($unit=="SECOND"){
+				$interval = $number . " SECOND";
+			} else if($unit=="MINUTE"){
+				$interval = $number . " MINUTE";
+			} else if($unit=="HOUR"){
+				$interval = $number . " HOUR";
+			}  else if($unit=="DAY"){
+				$interval = $number . " DAY";
+			}  else if($unit=="WEEK"){
+				$interval = $number . " WEEK";
+			}  else if($unit=="MONTH"){
+				$interval = $number . " MONTH";
+			}  else if($unit=="YEAR"){
+				$interval = $number . " YEAR";
+			}  else {
+				$interval = "1 DAY";
+			}
+			
+			$ncontents = 0;
+			$nusers = 0;
+
+			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$results[] = $v;
+				}	
+			}
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
 
 	public function getRelations(){
 		$maxweight = 1;
@@ -1614,6 +1678,7 @@ class ApiController extends AppController
 				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
 			}
 
+
 			$querystring = $querystring . ' ORDER BY c.created_at DESC ';
 
 			if( null!==$this->request->query('limit')){
@@ -1662,6 +1727,7 @@ class ApiController extends AppController
 				for($i=0; $i<count($nodes);$i++){
 					for($j=$i+1; $j<count($nodes);$j++){
 						$intersect = array_intersect( $nodes[$i]->cid,$nodes[$j]->cid );
+						
 						if(  count(  $intersect  )!=0 ){
 							$oo = new \stdClass();
 							$oo->source = $nodes[$i]->label;

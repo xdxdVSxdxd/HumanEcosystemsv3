@@ -464,13 +464,26 @@ class ResearchElement extends Entity
 				if(trim($tag)!=""){
 					//echo("[" . $tag . "]");
 					try{
+
+						echo("[a]");
+
+						$instagram = \InstagramScraper\Instagram::withCredentials($research->insta_client_id, $research->insta_token);
+						$instagram->login();
+
+						echo("[1]");
+
 						$medias = Instagram::getMediasByTag($tag, 30);
+
+						echo("[2]");
+
+						print_r($medias);
+
 						$json2 = new \stdClass();
 						$json2->data =$medias;
 
 						$this->process_insta_data2($json2,$research->id, $researchelement->id,$research->insta_token,'');
 					} catch (\Exception $ex){
-						echo("could not get Instagram tag:" . $tag);
+						echo("could not get Instagram tag:" . $tag . "[" . $ex->getMessage() . "]");
 					}
 				}
 			}
