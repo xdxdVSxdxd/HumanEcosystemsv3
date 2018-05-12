@@ -14,6 +14,7 @@
 			} else {
 				?>
 				<a href="researches/listresearches" class="btn btn-default"><span class="glyphicon glyphicon-cog" aria-hidden="true"></span> View your researches</a>
+				<a href="home/manage" class="btn btn-default"><span class="glyphicon glyphicon-wrench" aria-hidden="true"></span> Manage Researches</a>
 				<?php
 			}
 		?>
@@ -21,6 +22,8 @@
 		<a href="home/visualize" class="btn btn-default"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Visualize</a>
 
 		<a href="users/add" class="btn btn-default"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Add User</a>
+
+
 
 		<?php
 			if(  $authed  ){
