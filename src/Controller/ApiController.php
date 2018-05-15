@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' ] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics'] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -152,6 +152,63 @@ class ApiController extends AppController
 			$nusers = 0;
 
 			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') ';
+
+			//echo($querystring);
+
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$results[] = $v;
+				}	
+			}
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+	public function getLanguageStatistics(){
+
+		$results = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$interval = "1 DAY";
+
+			if($unit=="SECOND"){
+				$interval = $number . " SECOND";
+			} else if($unit=="MINUTE"){
+				$interval = $number . " MINUTE";
+			} else if($unit=="HOUR"){
+				$interval = $number . " HOUR";
+			}  else if($unit=="DAY"){
+				$interval = $number . " DAY";
+			}  else if($unit=="WEEK"){
+				$interval = $number . " WEEK";
+			}  else if($unit=="MONTH"){
+				$interval = $number . " MONTH";
+			}  else if($unit=="YEAR"){
+				$interval = $number . " YEAR";
+			}  else {
+				$interval = "1 DAY";
+			}
+
+			
+			$querystring = 'SELECT language, count(*) as n FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') GROUP BY language ORDER BY language';
 
 			//echo($querystring);
 

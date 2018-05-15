@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: May 12, 2018 at 09:54 AM
+-- Generation Time: May 14, 2018 at 02:36 PM
 -- Server version: 5.5.50
 -- PHP Version: 5.6.24-1~dotdeb+7.1
 
@@ -45,8 +45,9 @@ CREATE TABLE IF NOT EXISTS `contents` (
   PRIMARY KEY (`id`),
   KEY `research_id` (`research_id`),
   KEY `research_element_id` (`research_element_id`),
-  KEY `subject_id` (`subject_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=849008 ;
+  KEY `subject_id` (`subject_id`),
+  KEY `content_link_txt_idx` (`link`(255))
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=850663 ;
 
 -- --------------------------------------------------------
 
@@ -65,7 +66,7 @@ CREATE TABLE IF NOT EXISTS `contents_entities` (
   KEY `research_id` (`research_id`),
   KEY `research_element_id` (`research_element_id`),
   KEY `entity_id` (`entity_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=605059 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=607115 ;
 
 -- --------------------------------------------------------
 
@@ -85,7 +86,7 @@ CREATE TABLE IF NOT EXISTS `emotions` (
   KEY `research_element_id` (`research_element_id`),
   KEY `content_id` (`content_id`),
   KEY `emotion_type_id` (`emotion_type_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=289259 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=290212 ;
 
 -- --------------------------------------------------------
 
@@ -113,8 +114,9 @@ CREATE TABLE IF NOT EXISTS `entities` (
   `entity_type_id` int(11) unsigned NOT NULL,
   `entity` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `entity_type_id` (`entity_type_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=154168 ;
+  KEY `entity_type_id` (`entity_type_id`),
+  KEY `entity_name_type_idx` (`entity`,`entity_type_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=154352 ;
 
 -- --------------------------------------------------------
 
@@ -147,7 +149,7 @@ CREATE TABLE IF NOT EXISTS `relations` (
   KEY `subject_1_id` (`subject_1_id`),
   KEY `subject_2_id` (`subject_2_id`),
   KEY `c` (`c`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=738171 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=739400 ;
 
 -- --------------------------------------------------------
 
@@ -171,7 +173,7 @@ CREATE TABLE IF NOT EXISTS `researches` (
   `last_updated` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=124 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=125 ;
 
 -- --------------------------------------------------------
 
@@ -193,7 +195,7 @@ CREATE TABLE IF NOT EXISTS `research_elements` (
   KEY `research_element_type_id` (`research_element_type_id`),
   KEY `research_id` (`research_id`),
   KEY `updated_last` (`updated_last`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=198 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=201 ;
 
 -- --------------------------------------------------------
 
@@ -242,8 +244,9 @@ CREATE TABLE IF NOT EXISTS `subjects` (
   `profile_image_url` text CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `research_element_id` (`research_element_id`),
-  KEY `research_id` (`research_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=780277 ;
+  KEY `research_id` (`research_id`),
+  KEY `subjects_txt_idx` (`profile_url`(255))
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=780880 ;
 
 -- --------------------------------------------------------
 
