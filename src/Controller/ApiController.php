@@ -188,6 +188,7 @@ class ApiController extends AppController
 			$connection = ConnectionManager::get('default');
 
 			$interval = "1 DAY";
+			$unit = strtoupper( $this->request->query('unit') );
 
 			if($unit=="SECOND"){
 				$interval = $number . " SECOND";
