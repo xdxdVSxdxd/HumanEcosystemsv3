@@ -67,15 +67,22 @@ class ApiController extends AppController
 			} else if($mode=="all"){
 				$interval = "1 YEAR";
 			}
+
+			$rese = explode(",",$this->request->query('researches') );
+			for($i = 0; $i<count($rese); $i++){
+				$rese[$i] = intval($rese[$i]);
+			}
+			$researchlist = implode(",", $rese);
 			
 			$ncontents = 0;
 			$nusers = 0;
 
-			$querystring = 'SELECT count(*) as c FROM ( SELECT  DISTINCT subject_id as s FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) a';
+			$querystring = 'SELECT count(*) as c FROM ( SELECT  DISTINCT subject_id as s FROM contents c WHERE c.research_id IN ( ' . $researchlist . ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ' ) ) a';
 
 			//echo($querystring);
 
 			if($querystring!=""){
+
 				$re = $connection->execute($querystring)->fetchAll('assoc');
 			
 				foreach ($re as $v) {
@@ -84,11 +91,12 @@ class ApiController extends AppController
 				}	
 			}
 
-			$querystring = 'SELECT  count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
+			$querystring = 'SELECT  count(*) as c FROM contents c WHERE c.research_id IN ( ' . $researchlist . ' ) AND created_at > DATE_SUB(CURDATE(), INTERVAL  ' . $interval . ' ) ';
 
 			//echo($querystring);
 
 			if($querystring!=""){
+
 				$re = $connection->execute($querystring)->fetchAll('assoc');
 			
 				foreach ($re as $v) {
@@ -117,9 +125,13 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('number'))  && $this->request->query('number')!=""   && !is_null($this->request->query('unit'))  && $this->request->query('unit')!=""    ){
 
-			$researcharray = explode(",", $this->request->query('researches')  );
-			
 
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+			
 			$number = intval( $this->request->query('number') );
 			$unit = strtoupper( $this->request->query('unit') );
 
@@ -151,7 +163,7 @@ class ApiController extends AppController
 			$ncontents = 0;
 			$nusers = 0;
 
-			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') ';
+			$querystring = 'SELECT DISTINCT id, link, content, created_at, lat, lng, comfort, energy FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') ';
 
 			//echo($querystring);
 
@@ -183,6 +195,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 			
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
@@ -209,7 +224,7 @@ class ApiController extends AppController
 			}
 
 			
-			$querystring = 'SELECT language, count(*) as n FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') GROUP BY language ORDER BY language';
+			$querystring = 'SELECT language, count(*) as n FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND created_at > DATE_SUB(NOW(), INTERVAL ' . $interval . ') GROUP BY language ORDER BY language';
 
 			//echo($querystring);
 
@@ -245,10 +260,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT s1.id as sourceid, s1.screen_name as sourcenick , s1.profile_url as sourceurl, s2.id as targetid, s2.screen_name as targetnick , s2.profile_url as targeturl FROM subjects s1, subjects s2, relations r WHERE r.research_id IN (' .  $this->request->query('researches') .  ') AND  s1.id=r.subject_1_id AND s2.id=r.subject_2_id ';
+			$querystring = 'SELECT s1.id as sourceid, s1.screen_name as sourcenick , s1.profile_url as sourceurl, s2.id as targetid, s2.screen_name as targetnick , s2.profile_url as targeturl FROM subjects s1, subjects s2, relations r WHERE r.research_id IN (' .  implode(",", $researcharray) .  ') AND  s1.id=r.subject_1_id AND s2.id=r.subject_2_id ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -264,11 +282,11 @@ class ApiController extends AppController
 					$interval = "1 YEAR";					
 				}
 
-				$querystring = $querystring . ' AND  ( ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') )  )    OR    ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) )  )  ';
+				$querystring = $querystring . ' AND  ( ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') )  )    OR    ( r.subject_1_id IN ( SELECT subject_id as id FROM contents c WHERE c.research_id IN (' . implode(",", $researcharray)  .  ') AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ) )  )  ';
 			}
 
 			if( null!==$this->request->query('sensibility')){
-				$querystring = $querystring . ' AND r.c>=' . $this->request->query('sensibility');
+				$querystring = $querystring . ' AND r.c>=' . intval($this->request->query('sensibility'));
 			}
 
 			$querystring = $querystring . ' ORDER BY r.id DESC ';
@@ -386,10 +404,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT e.entity as entity, count(*) as value, DATE(c.created_at) date FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
+			$querystring = 'SELECT e.entity as entity, count(*) as value, DATE(c.created_at) date FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  implode(",", $researcharray ) .  ') AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -412,7 +433,7 @@ class ApiController extends AppController
 			$querystring = $querystring . ' GROUP BY entity, date ORDER BY entity asc, date asc ';
 			
 			if( null!==$this->request->query('gt')){
-				$querystring = 'SELECT * FROM (' . $querystring . ') a WHERE value > ' . $this->request->query('gt');
+				$querystring = 'SELECT * FROM (' . $querystring . ') a WHERE value > ' . intval($this->request->query('gt'));
 			}
 
 
@@ -456,10 +477,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('day'))  && $this->request->query('day')!=""   && !is_null($this->request->query('month'))  && $this->request->query('month')!=""  && !is_null($this->request->query('year'))  && $this->request->query('year')!=""  &&  !is_null($this->request->query('entity'))  && $this->request->query('entity')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT c.link as link, c.content as content, c.comfort as comfort, c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND YEAR(created_at)=' . $this->request->query('year') . ' AND MONTH(created_at)=' . $this->request->query('month') . ' AND DAY(created_at)=' . $this->request->query('day') . ' AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity="' . $this->request->query('entity') . '" ';
+			$querystring = 'SELECT c.link as link, c.content as content, c.comfort as comfort, c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  implode(",",$researcharray) .  ') AND YEAR(created_at)=' . intval($this->request->query('year')) . ' AND MONTH(created_at)=' . intval($this->request->query('month')) . ' AND DAY(created_at)=' . intval( $this->request->query('day') ) . ' AND  ce.content_id=c.id AND e.id=ce.entity_id AND e.entity="' . str_replace("'", "", $this->request->query('entity')) . '" ';
 
 			
 
@@ -505,6 +529,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
@@ -516,7 +543,7 @@ class ApiController extends AppController
 
 			
 			// return all the latest ones
-			$querystring = 'SELECT MAX(comfort) as maxcomfort, MIN(comfort) as mincomfort, MAX(energy) as maxenergy, MIN(energy) as minenergy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ')';
+			$querystring = 'SELECT MAX(comfort) as maxcomfort, MIN(comfort) as mincomfort, MAX(energy) as maxenergy, MIN(energy) as minenergy FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ')';
 
 			//echo($querystring);
 
@@ -553,12 +580,15 @@ class ApiController extends AppController
 
 		$delta = 50;
 		if(!is_null($this->request->query('delta'))  && $this->request->query('delta')!="" ){
-			$delta = $this->request->query('delta');
+			$delta = intval($this->request->query('delta'));
 		}
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
@@ -570,16 +600,22 @@ class ApiController extends AppController
 
 			if(!is_null($this->request->query('comfort'))  && $this->request->query('comfort')!="" ){
 				$comforts = explode(",", $this->request->query('comfort'));
+				for($i = 0 ; $i<count($comforts);$i++){
+					$comforts[$i] = intval($comforts[$i]);
+				}
 			}
 
 			if(!is_null($this->request->query('energy'))  && $this->request->query('energy')!="" ){
 				$energies = explode(",", $this->request->query('energy'));
+				for($i = 0 ; $i<count($energies);$i++){
+					$energies[$i] = intval($energies[$i]);
+				}
 			}
 
 			$querystring = "";
 
 			if( count($comforts)>0 && count($energies)>0 && count($comforts)==count($energies)  ){
-				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND (';
+				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND (';
 
 				for($k = 0 ; $k<count($comforts);$k++){
 					$querystring = $querystring . 
@@ -599,7 +635,7 @@ class ApiController extends AppController
 			} else if ( count($comforts)==0  && count($energies)==0 ){
 
 				// return all the latest ones
-				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') LIMIT 0,100';
+				$querystring = 'SELECT c.id as id,c.content as content,c.comfort as comfort,c.energy as energy FROM contents c WHERE c.research_id IN (' . implode(",", $researcharray) .  ') LIMIT 0,100';
 
 			}
 
@@ -646,6 +682,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
@@ -657,16 +696,22 @@ class ApiController extends AppController
 
 			if(!is_null($this->request->query('comfort'))  && $this->request->query('comfort')!="" ){
 				$comforts = explode(",", $this->request->query('comfort'));
+				for($i = 0; $i<count($comforts); $i++){
+					$comforts[$i] = intval($comforts[$i]);
+				}
 			}
 
 			if(!is_null($this->request->query('energy'))  && $this->request->query('energy')!="" ){
 				$energies = explode(",", $this->request->query('energy'));
+				for($i = 0; $i<count($energies); $i++){
+					$energies[$i] = intval($energies[$i]);
+				}
 			}
 
 			$querystring = "";
 
 			if( count($comforts)>0 && count($energies)>0 && count($comforts)==count($energies)  ){
-				$querystring = 'SELECT e.entity as entity ,c.comfort as comfort,c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND (e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) AND (';
+				$querystring = 'SELECT e.entity as entity ,c.comfort as comfort,c.energy as energy FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND (e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) AND (';
 
 				for($k = 0 ; $k<count($comforts);$k++){
 					$querystring = $querystring . 
@@ -727,13 +772,16 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
 
 			$results = array();
 
-			$re = $connection->execute('SELECT count(*) as c FROM subjects s WHERE s.research_id IN (' .  $this->request->query('researches') .  ')')->fetchAll('assoc');
+			$re = $connection->execute('SELECT count(*) as c FROM subjects s WHERE s.research_id IN (' .  implode(",", $researcharray) .  ')')->fetchAll('assoc');
 			
 			foreach ($re as $v) {
 				$o = new \stdClass();
@@ -758,13 +806,16 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
 
 			$results = array();
 
-			$re = $connection->execute('SELECT count(*) as c FROM contents s WHERE s.research_id IN (' .  $this->request->query('researches') .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL 10 MINUTE)')->fetchAll('assoc');
+			$re = $connection->execute('SELECT count(*) as c FROM contents s WHERE s.research_id IN (' .  implode(",", $researcharray) .  ') AND created_at > DATE_SUB(CURDATE(), INTERVAL 10 MINUTE)')->fetchAll('assoc');
 			
 			foreach ($re as $v) {
 				$o = new \stdClass();
@@ -789,6 +840,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
@@ -797,9 +851,9 @@ class ApiController extends AppController
 
 			if( null!==$this->request->query('limit')){
 
-				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  $this->request->query('researches') .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY ce.id DESC LIMIT 0,' . $this->request->query('limit'))->fetchAll('assoc');
+				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  implode(",", $researcharray) .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY ce.id DESC LIMIT 0,' . intval($this->request->query('limit'))->fetchAll('assoc');
 			} else {
-				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  $this->request->query('researches') .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" )')->fetchAll('assoc');
+				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  implode(",", $researcharray) .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" )')->fetchAll('assoc');
 			}
 
 			foreach ($re as $v) {
@@ -883,6 +937,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$contents = TableRegistry::get('Contents');
 
@@ -1033,6 +1090,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$emotions = TableRegistry::get('Emotions');
 			$emotiontypes = TableRegistry::get('EmotionTypes');
@@ -1092,6 +1152,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$contents = TableRegistry::get('Contents');
 
@@ -1152,6 +1215,9 @@ class ApiController extends AppController
 			}
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$emotions = TableRegistry::get('Emotions');
 
@@ -1226,12 +1292,15 @@ class ApiController extends AppController
 			$et = explode(",", $this->request->query('keywords') );
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$contents = TableRegistry::get('Contents');
 
 			for($k = 0; $k<count($et) ; $k++){
 
-				$et[$k] = strtoupper($et[$k]);
+				$et[$k] =  str_replace("'", "?",  strtoupper($et[$k]));
 
 				$q1 = null;
 
@@ -1310,6 +1379,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$contents = TableRegistry::get('Contents');
 
@@ -1377,6 +1449,10 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+
 
 			$contents = TableRegistry::get('Contents');
 
@@ -1393,7 +1469,7 @@ class ApiController extends AppController
 					->where( $conditions )
 	    			->select(['content'])
 	    			->order(['id' => 'DESC'])
-	    			->limit(  $this->request->query('limit')  );
+	    			->limit(  intval($this->request->query('limit'))  );
 			} else {
 				$q1 = $contents->find('all')
 					->where( $conditions )
@@ -1476,6 +1552,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$contents = TableRegistry::get('Contents');
 
@@ -1554,13 +1633,16 @@ class ApiController extends AppController
 			$connection = ConnectionManager::get('default');
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 
-			$querystring = 'SELECT  lat,lng,count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT  lat,lng,count(*) as c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
 
-				$querystring = $querystring . " AND language='" . $this->request->query('language') . "'";
+				$querystring = $querystring . " AND language='" .  str_replace("'", "",  $this->request->query('language') ) . "'";
 
 			}
 
@@ -1589,7 +1671,7 @@ class ApiController extends AppController
 			if( null!==$this->request->query('limit')){
 
 
-				$querystring = $querystring . " LIMIT 1," . $this->request->query('limit');
+				$querystring = $querystring . " LIMIT 1," . intval($this->request->query('limit'));
 
 
 			}
@@ -1631,13 +1713,16 @@ class ApiController extends AppController
 			$connection = ConnectionManager::get('default');
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 
-			$querystring = 'SELECT  et.id as emotion_id, et.label as label, lat,lng,count(*) as c FROM contents c , emotions e, emotion_types et WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND e.content_id=c.id AND e.emotion_type_id=et.id ';
+			$querystring = 'SELECT  et.id as emotion_id, et.label as label, lat,lng,count(*) as c FROM contents c , emotions e, emotion_types et WHERE c.research_id IN (' .  implode(",",$researcharray) .  ') AND e.content_id=c.id AND e.emotion_type_id=et.id ';
 
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
 
-				$querystring = $querystring . " AND language='" . $this->request->query('language') . "'";
+				$querystring = $querystring . " AND language='" . str_replace("'", "", $this->request->query('language')) . "'";
 
 			}
 
@@ -1666,7 +1751,7 @@ class ApiController extends AppController
 			if( null!==$this->request->query('limit')){
 
 
-				$querystring = $querystring . " LIMIT 1," . $this->request->query('limit');
+				$querystring = $querystring . " LIMIT 1," . intval($this->request->query('limit'));
 
 
 			}
@@ -1714,10 +1799,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT c.id as cid, e.id as eid, e.entity as label FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
+			$querystring = 'SELECT c.id as cid, e.id as eid, e.entity as label FROM contents c, contents_entities ce, entities e WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -1742,7 +1830,7 @@ class ApiController extends AppController
 			$querystring = $querystring . ' ORDER BY c.created_at DESC ';
 
 			if( null!==$this->request->query('limit')){
-				$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
+				$querystring = $querystring . ' LIMIT ' . intval($this->request->query('limit'));
 			}
 			
 
@@ -1826,10 +1914,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" &&  !is_null($this->request->query('topic'))  && $this->request->query('topic')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT c.id as cid, e.id as eid, e.entity as label FROM contents c, contents_entities ce, entities e, contents_entities ce2, entities e2 WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 AND c.id = ce2.content_id AND UCASE(e2.entity) LIKE "' . strtoupper( str_replace('"', "", $this->request->query('topic')) ) . '"  AND  ce2.entity_id=e2.id  ';
+			$querystring = 'SELECT c.id as cid, e.id as eid, e.entity as label FROM contents c, contents_entities ce, entities e, contents_entities ce2, entities e2 WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 AND c.id = ce2.content_id AND UCASE(e2.entity) LIKE "' . strtoupper( str_replace('"', "", $this->request->query('topic')) ) . '"  AND  ce2.entity_id=e2.id  ';
 
 
 			if( null!==$this->request->query('mode')){
@@ -1854,7 +1945,7 @@ class ApiController extends AppController
 			$querystring = $querystring . ' ORDER BY c.created_at DESC ';
 
 			if( null!==$this->request->query('limit')){
-				$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
+				$querystring = $querystring . ' LIMIT ' . intval($this->request->query('limit'));
 			}
 			
 			//echo($querystring);
@@ -1933,10 +2024,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" &&  !is_null($this->request->query('topic'))  && $this->request->query('topic')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT AVG(c.energy) as energy, AVG(c.comfort) as comfort, c.language as language, count(*) as c FROM contents c, contents_entities ce, entities e, contents_entities ce2, entities e2 WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 AND c.id = ce2.content_id AND UCASE(e2.entity) LIKE "' . strtoupper( str_replace('"', "", $this->request->query('topic')) ) . '"  AND  ce2.entity_id=e2.id  ';
+			$querystring = 'SELECT AVG(c.energy) as energy, AVG(c.comfort) as comfort, c.language as language, count(*) as c FROM contents c, contents_entities ce, entities e, contents_entities ce2, entities e2 WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 AND c.id = ce2.content_id AND UCASE(e2.entity) LIKE "' . strtoupper( str_replace('"', "", $this->request->query('topic')) ) . '"  AND  ce2.entity_id=e2.id  ';
 
 
 			if( null!==$this->request->query('mode')){
@@ -1961,7 +2055,7 @@ class ApiController extends AppController
 			$querystring = $querystring . ' GROUP BY language ORDER BY c.created_at DESC ';
 
 			if( null!==$this->request->query('limit')){
-				$querystring = $querystring . ' LIMIT ' . $this->request->query('limit');
+				$querystring = $querystring . ' LIMIT ' . intval($this->request->query('limit'));
 			}
 			
 			//echo($querystring);
@@ -2003,6 +2097,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2038,7 +2135,14 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('keywords'))  && $this->request->query('keywords')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 			$keywordarray = explode(",", $this->request->query('keywords')  );
+			for($i = 0; $i<count($keywordarray); $i++){
+				$keywordarray[$i] = str_replace("'", "?", $keywordarray[$i]);
+				$keywordarray[$i] = str_replace('"', "?", $keywordarray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2081,6 +2185,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('groups'))  && $this->request->query('groups')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 			$groups = $this->request->query('groups');
 
 			//print_r($groups);
@@ -2103,7 +2210,7 @@ class ApiController extends AppController
 
 			}
 
-			$querystring = $querystring . ' FROM contents c, relations r WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND (c.subject_id=r.subject_1_id OR c.subject_id=r.subject_2_id) ';
+			$querystring = $querystring . ' FROM contents c, relations r WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND (c.subject_id=r.subject_1_id OR c.subject_id=r.subject_2_id) ';
 
 			$querystring = $querystring . " AND ( ";
 
@@ -2188,8 +2295,19 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('search'))  && $this->request->query('search')!=""  && !is_null($this->request->query('mention'))  && $this->request->query('mention')!="" && !is_null($this->request->query('groups'))  && $this->request->query('groups')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 			$searcharray = explode(",", $this->request->query('search')  );
+			for($i = 0; $i<count($searcharray); $i++){
+				$searcharray[$i] = str_replace("'", "?", $searcharray[$i]);
+				$searcharray[$i] = str_replace('"', "?", $searcharray[$i]);
+			}
 			$mentionarray = explode(",", $this->request->query('mention')  );
+			for($i = 0; $i<count($mentionarray); $i++){
+				$mentionarray[$i] = str_replace("'", "?", $mentionarray[$i]);
+				$mentionarray[$i] = str_replace('"', "?", $mentionarray[$i]);
+			}
 
 			$groups = $this->request->query('groups');
 
@@ -2202,7 +2320,7 @@ class ApiController extends AppController
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT DATE_FORMAT(created_at, "%a") as day, c.content as content, c.comfort as comfort, c.energy as energy , c.favorite_count as favorite_count, c.retweet_count as retweet_count FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ( 1=0 ';
+			$querystring = 'SELECT DATE_FORMAT(created_at, "%a") as day, c.content as content, c.comfort as comfort, c.energy as energy , c.favorite_count as favorite_count, c.retweet_count as retweet_count FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND ( 1=0 ';
 
 			foreach ($searcharray as $s) {
 				$querystring = $querystring . " OR UCASE(c.content) LIKE '%" .  strtoupper( str_replace("'", " ", $s) )  . "%' ";
@@ -2318,11 +2436,14 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT s.id as subject_id, s.name as name, s.screen_name as nick, s.followers_count as followers, s.friends_count as friends, s.profile_url as purl, s.profile_image_url as imageurl , count(c.id) as nposts, sum(c.favorite_count) as favorites , sum(retweet_count) as shares FROM subjects s, contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.subject_id=s.id ';
+			$querystring = 'SELECT s.id as subject_id, s.name as name, s.screen_name as nick, s.followers_count as followers, s.friends_count as friends, s.profile_url as purl, s.profile_image_url as imageurl , count(c.id) as nposts, sum(c.favorite_count) as favorites , sum(retweet_count) as shares FROM subjects s, contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND c.subject_id=s.id ';
 
 
 			if( null!==$this->request->query('mode')){
@@ -2381,13 +2502,16 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""  && !is_null($this->request->query('subject_id'))  && $this->request->query('subject_id')!=""  ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
-			$subject_id = $this->request->query('subject_id');
+			$subject_id = intval($this->request->query('subject_id'));
 
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT c.content as text, c.created_at as created_at FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.subject_id=' . $subject_id . ' ';
+			$querystring = 'SELECT c.content as text, c.created_at as created_at FROM contents c WHERE c.research_id IN (' . implode(",", $researcharray) .  ') AND c.subject_id=' . $subject_id . ' ';
 
 
 			if( null!==$this->request->query('mode')){
@@ -2446,10 +2570,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT  e.entity as entity FROM contents c , contents_entities ce , entities e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
+			$querystring = 'SELECT  e.entity as entity FROM contents c , contents_entities ce , entities e WHERE c.research_id IN (' .  implode(",",$researcharray) .  ') AND ce.content_id=c.id AND e.id=ce.entity_id AND e.entity_type_id=1 ';
 
 
 			if( null!==$this->request->query('mode')){
@@ -2522,14 +2649,17 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('sentiment'))  && $this->request->query('sentiment')!="" ){
 
-			$sentimentcondition = " AND c.comfort > " . $negative_threshold;
+			$sentimentcondition = " AND c.comfort > " . intval($negative_threshold);
 			if($this->request->query('sentiment')=="negative"){
-				$sentimentcondition = "AND c.comfort < " . -$negative_threshold;
+				$sentimentcondition = "AND c.comfort < " . -intval($negative_threshold);
 			} else if($this->request->query('sentiment')=="neutral"){
-				$sentimentcondition = " AND c.comfort >= " . -$negative_threshold . " AND c.comfort <= " . $negative_threshold;
+				$sentimentcondition = " AND c.comfort >= " . -intval($negative_threshold) . " AND c.comfort <= " . intval($negative_threshold);
 			}
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2539,7 +2669,7 @@ class ApiController extends AppController
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 			}
 
-			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -2561,7 +2691,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"', "",  $this->request->query('language') ) . '\"';
 			}
 
 			$querystring = $querystring . $sentimentcondition;
@@ -2628,9 +2758,17 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('keyword'))  && $this->request->query('keyword')!="" ){
 
-			$sentimentcondition = " AND UCASE(c.content) LIKE '%" . strtoupper($this->request->query('keyword')) . "%'";
+
+			$wo = strtoupper($this->request->query('keyword'));
+			$wo = str_replace("'", "?", $wo);
+			$wo = str_replace('"', "?", $wo);
+
+			$sentimentcondition = " AND UCASE(c.content) LIKE '%" . $wo . "%'";
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2640,7 +2778,7 @@ class ApiController extends AppController
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 			}
 
-			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -2662,7 +2800,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"', "", $this->request->query('language') ) . '\"';
 			}
 
 			$querystring = $querystring . $sentimentcondition;
@@ -2729,9 +2867,17 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('keyword'))  && $this->request->query('keyword')!="" ){
 
-			$sentimentcondition = " AND UCASE(c.content) LIKE '%" . strtoupper($this->request->query('keyword')) . "%'";
+			$wo = strtoupper($this->request->query('keyword'));
+			$wo = str_replace("'", "?", $wo);
+			$wo = str_replace('"', "?", $wo);
+
+			$sentimentcondition = " AND UCASE(c.content) LIKE '%" . $wo . "%'";
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+
 
 			$connection = ConnectionManager::get('default');
 
@@ -2741,7 +2887,7 @@ class ApiController extends AppController
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 			}
 
-			$querystring = 'SELECT ' . $selector . ' , count(*)*comfort*energy c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT ' . $selector . ' , count(*)*comfort*energy c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -2763,7 +2909,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"', "",  $this->request->query('language') ) . '\"';
 			}
 
 			$querystring = $querystring . $sentimentcondition;
@@ -2832,9 +2978,16 @@ class ApiController extends AppController
 
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('emotion-condition'))  && $this->request->query('emotion-condition')!="" ){
 
-			$emotioncondition = " AND " . $this->request->query('emotion-condition');
+
+			$emcond = $this->request->query('emotion-condition');
+			$emcond = str_replace("'", "", $emcond);
+			$emcond = str_replace('"', "", $emcond);
+			$emotioncondition = " AND " . $emcond;
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2844,7 +2997,7 @@ class ApiController extends AppController
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 			}
 
-			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c WHERE c.research_id IN (' .  implode(",",$researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -2866,7 +3019,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"', "", $this->request->query('language') ) . '\"';
 			}
 
 			$querystring = $querystring . $emotioncondition;
@@ -2948,6 +3101,9 @@ class ApiController extends AppController
 			$mentioncondition = " AND ( " . $mentioncondition . " )";
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -2960,10 +3116,13 @@ class ApiController extends AppController
 			$querystring = 'SELECT ' . $selector . ' , count(*)';
 
 			if( null!==$this->request->query('weightwith')  && $this->request->query('weightwith')!="" ){
-				$querystring = $querystring . "*". $this->request->query('weightwith');
+				$ww = $this->request->query('weightwith');
+				$ww = str_replace("'", "", $ww);
+				$ww = str_replace('"', "", $ww);
+				$querystring = $querystring . "*". $ww;
 			}
 
-			$querystring = $querystring . ' as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = $querystring . ' as c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -2985,7 +3144,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"' , "", $this->request->query('language') ) . '\"';
 			}
 
 			$querystring = $querystring . $mentioncondition;
@@ -3055,6 +3214,9 @@ class ApiController extends AppController
 
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
@@ -3064,7 +3226,7 @@ class ApiController extends AppController
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 			}
 
-			$querystring = 'SELECT HOUR(created_at) as h, count(*) as c FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT HOUR(created_at) as h, count(*) as c FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -3086,7 +3248,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"', "", $this->request->query('language') ) . '\"';
 			}
 
 
@@ -3137,11 +3299,14 @@ class ApiController extends AppController
 
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
 
-			$querystring = 'SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, s.followers_count as followers_count, s.listed_count as listed_count, count(*) as c , avg(c.comfort) as avgcomfort, avg(c.energy) as avgenergy, count(*)*(s.followers_count+s.listed_count) as coeff FROM contents c,subjects s WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND s.id=c.subject_id ';
+			$querystring = 'SELECT s.name as name, s.screen_name as screen_name, s.profile_url as profile_url, s.profile_image_url as profile_image_url, s.followers_count as followers_count, s.listed_count as listed_count, count(*) as c , avg(c.comfort) as avgcomfort, avg(c.energy) as avgenergy, count(*)*(s.followers_count+s.listed_count) as coeff FROM contents c,subjects s WHERE c.research_id IN (' .  implode(",",$researcharray) .  ') AND s.id=c.subject_id ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -3163,7 +3328,7 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"',"", $this->request->query('language') ) . '\"';
 			}
 
 
@@ -3232,7 +3397,7 @@ class ApiController extends AppController
 
 			$emotionID = -1;
 
-			$qq = "SELECT id FROM emotion_types WHERE label='" . $this->request->query('emotion') . "'";
+			$qq = "SELECT id FROM emotion_types WHERE label='" . str_replace("'","", $this->request->query('emotion') ). "'";
 
 			if($qq!=""){
 				$re1 = $connection->execute($qq)->fetchAll('assoc');
@@ -3248,6 +3413,9 @@ class ApiController extends AppController
 				$sentimentcondition = " AND e.emotion_type_id=" . $emotionID;
 
 				$researcharray = explode(",", $this->request->query('researches')  );
+				for($i = 0; $i<count($researcharray); $i++){
+					$researcharray[$i] = intval($researcharray[$i]);
+				}
 
 				$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d, HOUR(created_at) h";
 
@@ -3255,7 +3423,7 @@ class ApiController extends AppController
 					$selector = "YEAR(created_at) y, MONTH(created_at) m , DAY(created_at) d";
 				}
 
-				$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c , emotions e WHERE c.research_id IN (' .  $this->request->query('researches') .  ') AND c.id=e.content_id ';
+				$querystring = 'SELECT ' . $selector . ' , count(*) c FROM contents c , emotions e WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') AND c.id=e.content_id ';
 
 				if( null!==$this->request->query('mode')){
 
@@ -3277,7 +3445,7 @@ class ApiController extends AppController
 				}
 
 				if( null!==$this->request->query('language')){
-					$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+					$querystring = $querystring . ' AND language = \"' . str_replace('"', "", $this->request->query('language') ) . '\"';
 				}
 
 				$querystring = $querystring . $sentimentcondition;
@@ -3350,10 +3518,13 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT comfort, energy FROM contents c WHERE c.research_id IN (' .  $this->request->query('researches') .  ') ';
+			$querystring = 'SELECT comfort, energy FROM contents c WHERE c.research_id IN (' .  implode(",", $researcharray) .  ') ';
 
 			if( null!==$this->request->query('mode')){
 
@@ -3375,13 +3546,13 @@ class ApiController extends AppController
 			}
 
 			if( null!==$this->request->query('language')){
-				$querystring = $querystring . ' AND language = \"' . $this->request->query('language')  . '\"';
+				$querystring = $querystring . ' AND language = \"' . str_replace('"','',$this->request->query('language'))  . '\"';
 			}
 
 			$querystring = $querystring . ' ORDER BY id DESC';
 
 			if( null!==$this->request->query('limit')){
-				$querystring = $querystring . ' LIMIT 1,' . $this->request->query('limit');
+				$querystring = $querystring . ' LIMIT 1,' . intval($this->request->query('limit'));
 			}
 
 			//echo($querystring);
@@ -3416,6 +3587,9 @@ class ApiController extends AppController
 		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" ){
 
 			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
 
 
 
