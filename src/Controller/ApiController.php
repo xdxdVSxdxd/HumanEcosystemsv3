@@ -851,7 +851,7 @@ class ApiController extends AppController
 
 			if( null!==$this->request->query('limit')){
 
-				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  implode(",", $researcharray) .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY ce.id DESC LIMIT 0,' . intval($this->request->query('limit'))->fetchAll('assoc');
+				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  implode(",", $researcharray) .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" ) ORDER BY ce.id DESC LIMIT 0,' . intval($this->request->query('limit')))->fetchAll('assoc');
 			} else {
 				$re = $connection->execute('SELECT e.id as id, e.entity as entity FROM contents_entities ce, entities e WHERE ce.research_id IN (' .  implode(",", $researcharray) .  ') AND e.id=ce.entity_id AND ( e.entity LIKE "%jpg" OR e.entity LIKE "%png" )')->fetchAll('assoc');
 			}
@@ -2598,6 +2598,25 @@ class ApiController extends AppController
 				$querystring = $querystring . ' AND c.created_at > DATE_SUB(CURDATE(), INTERVAL ' . $interval . ') ';
 			}
 
+			if(
+				!is_null($this->request->query('minComfort')) &&
+				is_numeric($this->request->query('minComfort')) &&
+
+				!is_null($this->request->query('maxComfort')) &&
+				is_numeric($this->request->query('maxComfort')) &&
+
+				!is_null($this->request->query('minEnergy')) &&
+				is_numeric($this->request->query('minEnergy')) &&
+
+				!is_null($this->request->query('maxEnergy')) &&
+				is_numeric($this->request->query('maxEnergy')) 
+
+			){
+
+				$querystring = $querystring . ' AND c.comfort >=' . floatval($this->request->query('minComfort')) .   '  AND c.comfort <=' . floatval($this->request->query('maxComfort')) .   '  AND c.energy >=' . floatval($this->request->query('minEnergy')) .   ' AND c.energy <=' . floatval($this->request->query('maxEnergy')) .   ' ';
+
+			}
+
 			$querystring = $querystring . " ORDER BY ce.id DESC";
 	
 			if( null!==$this->request->query('limit')){
@@ -2606,7 +2625,7 @@ class ApiController extends AppController
 
 			}
 
-
+			
 			if($querystring!=""){
 				$re = $connection->execute($querystring)->fetchAll('assoc');
 			

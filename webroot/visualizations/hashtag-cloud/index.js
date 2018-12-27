@@ -6,6 +6,11 @@ var limit = 500;
 
 var language = "XXX";
 
+var minComfort = null;
+var maxComfort = null;
+var minEnergy = null;
+var maxEnergy = null;
+
 $( document ).ready(function() {
  
     reserchesstring = getUrlParameter("researches");
@@ -17,6 +22,23 @@ $( document ).ready(function() {
 
     if(getUrlParameter("language")!=null){
         language = getUrlParameter("language");
+    }
+
+
+    if(getUrlParameter("minComfort")!=null){
+        minComfort = getUrlParameter("minComfort");
+    }
+
+    if(getUrlParameter("maxComfort")!=null){
+        maxComfort = getUrlParameter("maxComfort");
+    }
+
+    if(getUrlParameter("minEnergy")!=null){
+        minEnergy = getUrlParameter("minEnergy");
+    }
+
+    if(getUrlParameter("maxEnergy")!=null){
+        maxEnergy = getUrlParameter("maxEnergy");
     }
 
 
@@ -52,7 +74,25 @@ function getWordCloud(clearGraph){
             .attr("transform", "translate(0," + -tcbleed + ")");
 
 
-    $.getJSON("../api/getHashtagCloud", { "researches" : reserchesstring , "limit" : limit , "language": language})
+    var parameters = { "researches" : reserchesstring , "limit" : limit , "language": language};
+
+    if(minComfort!=null){
+        parameters.minComfort = minComfort;
+    }
+
+    if(maxComfort!=null){
+        parameters.maxComfort = maxComfort;
+    }
+
+    if(minEnergy!=null){
+        parameters.minEnergy = minEnergy;
+    }
+
+    if(maxEnergy!=null){
+        parameters.maxEnergy = maxEnergy;
+    }
+
+    $.getJSON("../api/getHashtagCloud", parameters )
     .done(function(data){
 
         //console.log(data);
