@@ -45,44 +45,49 @@ class AnonimizerTask extends Shell
 
     public function anonimize(){
 
-    			
-		$conn = ConnectionManager::get('default');
 
+    	echo("[executing anonimizer task]\n");
+    	$conn = ConnectionManager::get('default');
+		echo("[db connection established]\n");
 		
+
+		echo("[anonimizing contents]\n");
 		$stmt = $conn->execute('SELECT * FROM contents');
-		$sm = $stmt->fetchAll('assoc');
-		$smileys = array();
-		foreach($sm as $s){
+		while($s = $stmt->fetch('assoc') ){
 			$link = $s["link"];
 			$content = $s["content"];
 			$social_id = $s["social_id"];
 			$id = $s["id"];
 
+			echo("[handling ID=" . $id . "]\n");
+
 			$content = preg_replace('/(^|[^a-z0-9_])@([a-z0-9_]+)/i', '@MENTION', $content);
 			$link = hash("sha512", $link);
 			$social_id = hash("sha512", $social_id);
 
-			$stmt2 = $conn->execute('UPDATE contents SET link="' .  str_replace('"', " ", $link)  . '" , content="' .  str_replace('"', " ", $content)  . '" , social_id="' .  str_replace('"', " ", $social_id)  . '" WHERE id=' . $id);
+			$conn->update("contents", ['link' => $link , 'content' => $content, 'social_id' => $social_id],['id' => $id]);
+
  		}
 
 
-
+ 		echo("[anonimizing subjects]\n");
  		$stmt = $conn->execute('SELECT * FROM subjects');
-		$sm = $stmt->fetchAll('assoc');
-		$smileys = array();
-		foreach($sm as $s){
+		while($s = $stmt->fetch('assoc') ){
 			$name = $s["name"];
 			$screen_name = $s["screen_name"];
 			$social_id = $s["social_id"];
 			$profile_url = $s["profile_url"];
 			$id = $s["id"];
 
+			echo("[handling ID=" . $id . "]\n");
+
 			$name = hash("sha512", $name);
 			$screen_name = hash("sha512", $screen_name);
 			$social_id = hash("sha512", $social_id);
 			$profile_url = hash("sha512", $profile_url);
 
-			$stmt2 = $conn->execute('UPDATE subjects SET name="' .  str_replace('"', " ", $name)  . '" , screen_name="' .  str_replace('"', " ", $screen_name)  . '" , social_id="' .  str_replace('"', " ", $social_id)  . '" , profile_url="' .  str_replace('"', " ", $profile_url)  . '" WHERE id=' . $id);
+			$conn->update("subjects", ['name' => $name , 'screen_name' => $screen_name, 'social_id' => $social_id , 'profile_url' => $profile_url],['id' => $id]);
+
  		}
 
 
