@@ -38,6 +38,7 @@ use InstagramScraper\Instagram;
 class ResearchElement extends Entity
 {
 
+	$anonimize = true;
 
 
 	function process($id){
@@ -706,6 +707,13 @@ class ResearchElement extends Entity
 				$profile_url = "https://twitter.com/" . $status["user"]["screen_name"];
 				$profile_image_url = $status["user"]["profile_image_url"];
 
+				if($this->anonimize){
+					$id_str = hash("sha512", $id_str);
+					$name = hash("sha512", $name);
+					$screen_name = hash("sha512", $screen_name);
+					$profile_url = hash("sha512", $profile_url);
+				}
+
 
 				$query = $subjects->find('all', [
 				    'conditions' => ['profile_url =' => $profile_url]
@@ -733,12 +741,19 @@ class ResearchElement extends Entity
 				if($subjects->save($subject)){
 					// continuare
 					$link = "https://twitter.com/" . $screen_name . "/status/" . $status["id_str"];
+					if($this->anonimize){
+						$link = hash("sha512", $link);
+					}
 					$text = $status["text"];
 					$created_at = new Time( $status["created_at"] );
 					$social_id = $status["id_str"];
 					$language = $status["lang"];
 					$favorite_count = $status["favorite_count"];
 					$retweet_count = $status["retweet_count"];
+					if($this->anonimize){
+						$text = preg_replace('/(^|[^a-z0-9_])@([a-z0-9_]+)/i', '@MENTION', $text);
+						$social_id = hash("sha512", $social_id);
+					}
 
 					$lat = -999;
 					$lng = -999;
@@ -866,6 +881,10 @@ class ResearchElement extends Entity
 							$entity_type_id = 2;
 							$text = str_replace("'", "\'", $urlentity);
 
+							if($this->anonimize){
+								$text = hash("sha512", $text);
+							}
+
 							$q4 = "SELECT * FROM entities WHERE entity='" . $text . "' AND entity_type_id=" . $entity_type_id;
 
 							$query = $entities->find('all', [
@@ -977,6 +996,13 @@ class ResearchElement extends Entity
 								$profile_image_url = $status["retweeted_status"]["user"]["profile_image_url"];
 
 
+								if($this->anonimize){
+									$id_str = hash("sha512", $id_str);
+									$name = hash("sha512", $name);
+									$screen_name = hash("sha512", $screen_name);
+									$profile_url = hash("sha512", $profile_url);
+								}
+
 								$query = $subjects->find('all', [
 								    'conditions' => ['profile_url =' => $profile_url]
 								]);
@@ -1045,6 +1071,12 @@ class ResearchElement extends Entity
 								$profile_url = "https://twitter.com/" . $status["quoted_status"]["user"]["screen_name"];
 								$profile_image_url = $status["quoted_status"]["user"]["profile_image_url"];
 
+								if($this->anonimize){
+									$id_str = hash("sha512", $id_str);
+									$name = hash("sha512", $name);
+									$screen_name = hash("sha512", $screen_name);
+									$profile_url = hash("sha512", $profile_url);
+								}
 
 								$query = $subjects->find('all', [
 								    'conditions' => ['profile_url =' => $profile_url]
@@ -1114,6 +1146,12 @@ class ResearchElement extends Entity
 								$profile_url = "https://twitter.com/" . $status["in_reply_to_screen_name"];
 								$profile_image_url = "";
 
+								if($this->anonimize){
+									$id_str = hash("sha512", $id_str);
+									$name = hash("sha512", $name);
+									$screen_name = hash("sha512", $screen_name);
+									$profile_url = hash("sha512", $profile_url);
+								}
 
 								$query = $subjects->find('all', [
 								    'conditions' => ['profile_url =' => $profile_url]
@@ -1185,6 +1223,12 @@ class ResearchElement extends Entity
 									$profile_url = "https://twitter.com/" . $mention["screen_name"];
 									$profile_image_url = "";
 
+									if($this->anonimize){
+										$id_str = hash("sha512", $id_str);
+										$name = hash("sha512", $name);
+										$screen_name = hash("sha512", $screen_name);
+										$profile_url = hash("sha512", $profile_url);
+									}
 
 									$query = $subjects->find('all', [
 									    'conditions' => ['profile_url =' => $profile_url]
@@ -1840,6 +1884,12 @@ class ResearchElement extends Entity
 					$profile_url = "https://www.instagram.com/" . $screen_name . "/";
 					$profile_image_url = $iu->profilePicUrl;
 
+					if($this->anonimize){
+						$id_str = hash("sha512", $id_str);
+						$name = hash("sha512", $name);
+						$screen_name = hash("sha512", $screen_name);
+						$profile_url = hash("sha512", $profile_url);
+					}
 
 					$query = $subjects->find('all', [
 					    'conditions' => ['profile_url =' => $profile_url]
@@ -1871,6 +1921,13 @@ class ResearchElement extends Entity
 						if(isset($status->caption)  ){
 							$text = $status->caption;
 						}
+
+						if($this->anonimize){
+							$link = hash("sha512", $link);
+						}
+
+
+
 						$created_at = new Time( $status->createdTime );
 						$social_id = $status->id;
 						$language = "XXX";
@@ -1899,6 +1956,11 @@ class ResearchElement extends Entity
 						if(is_null($content)){
 							$content = $contents->newEntity();
 							$isNewContent = true;
+						}
+
+						if($this->anonimize){
+							$text = preg_replace('/(^|[^a-z0-9_])@([a-z0-9_]+)/i', '@MENTION', $text);
+							$social_id = hash("sha512", $social_id);
 						}
 
 						$content->research_id = $research_id;
@@ -2119,7 +2181,12 @@ class ResearchElement extends Entity
 												$profile_image_url = $iu2->profilePicUrl;	
 											}
 											
-
+											if($this->anonimize){
+												$id_str = hash("sha512", $id_str);
+												$name = hash("sha512", $name);
+												$screen_name = hash("sha512", $screen_name);
+												$profile_url = hash("sha512", $profile_url);
+											}
 
 											$query = $subjects->find('all', [
 											    'conditions' => ['profile_url =' => $profile_url]
@@ -2202,7 +2269,12 @@ class ResearchElement extends Entity
 												$profile_image_url = $comment->user->profilePicUrl;	
 											}
 											
-
+											if($this->anonimize){
+												$id_str = hash("sha512", $id_str);
+												$name = hash("sha512", $name);
+												$screen_name = hash("sha512", $screen_name);
+												$profile_url = hash("sha512", $profile_url);
+											}
 
 											$query = $subjects->find('all', [
 											    'conditions' => ['profile_url =' => $profile_url]
