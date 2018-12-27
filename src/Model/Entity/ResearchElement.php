@@ -38,7 +38,7 @@ use InstagramScraper\Instagram;
 class ResearchElement extends Entity
 {
 
-	$anonimize = true;
+	public $anonimize = true;
 
 
 	function process($id){
