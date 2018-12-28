@@ -671,8 +671,8 @@ function getTopUsers(){
 
             htmlstring = htmlstring + " <tr>";
             htmlstring = htmlstring + "     <td><img src='" + data.results[i].profile_image_url + "' class='topuserimage' /></td>";
-            htmlstring = htmlstring + "     <td>" + data.results[i].name + "</td>";
-            htmlstring = htmlstring + "     <td>" + data.results[i].screen_name + "</td>";
+            htmlstring = htmlstring + "     <td>" + data.results[i].name.substring(0,10) + "...</td>";
+            htmlstring = htmlstring + "     <td>" + data.results[i].screen_name.substring(0,10) + "...</td>";
             htmlstring = htmlstring + "     <td>" + data.results[i].c + "</td>";
             htmlstring = htmlstring + "     <td>" + data.results[i].coeff + "</td>";
             htmlstring = htmlstring + "     <td>" + data.results[i].avgcomfort + "</td>";
@@ -1116,10 +1116,10 @@ function getUserRelations(clearGraph){
               .attr("dx", function(d){  return 12; })
               .attr("dy", ".35em")
               .style("font-size",function(d){ return 4 + (40*d.c/maxn); })
-              .text(function(d) { return d.nick });
+              .text(function(d) { return d.nick.substring(0,10) + "..." });
 
             node.append("title")
-              .text(function(d) { return d.nick; });
+              .text(function(d) { return d.nick.substring(0,10) + "..."; });
 
             ugforce.on("tick", function() {
 

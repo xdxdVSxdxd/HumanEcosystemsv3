@@ -167,7 +167,7 @@ function render(container , data, howmany){
             content = content + "<img src='" + data[i].imageurl + "' class='pimage' />";
             content = content + "</td>";
             content = content + "<td>";
-            content = content + "<strong>" + data[i].nick + "</strong>";
+            content = content + "<strong>" + data[i].nick.substring(0,10) + "..." + "</strong>";
             content = content + "</td>";
             content = content + "<td>";
             content = content + "<a href='" + data[i].purl + "' class='btn btn-default' target='_blank'><span class='glyphicon glyphicon-user' aria-hidden='true'></span> LINK</a>";
