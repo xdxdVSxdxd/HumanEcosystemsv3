@@ -29,6 +29,8 @@ require_once ('vendor/emotions/stopwords.php');
 class FacebookGroupsHarvestTask extends Shell
 {
 
+	public $anonimize = true;
+
 	public function initialize()
     {
         parent::initialize();
@@ -155,6 +157,13 @@ class FacebookGroupsHarvestTask extends Shell
 									$profile_url = "https://www.facebook.com/search/top/?q=" . str_replace("'", " ", $parts[2] );
 									$profile_image_url = "";
 
+									if($this->anonimize){
+										$id_str = hash("sha512", $id_str);
+										$name = hash("sha512", $name);
+										$screen_name = hash("sha512", $screen_name);
+										$profile_url = hash("sha512", $profile_url);
+									}
+
 									
 									$q1 = "SELECT * FROM subjects WHERE profile_url='" . $profile_url . "' LIMIT 0,1";
 									$s1 = $conn->execute($q1);
@@ -164,7 +173,7 @@ class FacebookGroupsHarvestTask extends Shell
 										$r1 = $row1[0];
 										// aggiornare
 										$id_subject = $r1["id"];
-										$followers_count = $followers_count + $r1["followers_count"];
+										$followers_count = $r1["followers_count"];
 										$q2 = "UPDATE subjects SET followers_count=" . $followers_count . " WHERE id=" . $id_subject;
 										$s2 = $conn->execute($q2);
 										
@@ -179,15 +188,24 @@ class FacebookGroupsHarvestTask extends Shell
 
 									$id_content = -1;
 									$link = "https://www.facebook.com/" . $parts[0];
+									if($this->anonimize){
+										$link = hash("sha512", $link);
+									}
 									$text = str_replace("'", " ", $parts[1]);
 									if(isset($parts[3]) && $parts[3]!=""){
 										$text = str_replace("'", " ", $parts[3]) . " – " . $text;
 									}
+
 									$created_at = $parts[6]; //new Time( $parts[6] );
 									$social_id = str_replace("'", " ", $parts[0]);
 									$language = "XXX";
 									$favorite_count = $parts[10];
 									$retweet_count = $parts[9];
+
+									if($this->anonimize){
+										$text = preg_replace('/(^|[^a-z0-9_])@([a-z0-9_]+)/i', '@MENTION', $text);
+										$social_id = hash("sha512", $social_id);
+									}
 
 									$lat = -999;
 									$lng = -999;
