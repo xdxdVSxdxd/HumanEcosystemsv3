@@ -14,6 +14,8 @@ if len(sys.argv)>3:
 
     access_token = app_id + "|" + app_secret
 
+    print(access_token)
+
     retries = 0
 
     def request_until_succeed(url):
@@ -48,9 +50,11 @@ if len(sys.argv)>3:
         # http://stackoverflow.com/a/37239851 for Reactions parameters
         base = "https://graph.facebook.com/v2.6"
         node = "/%s/feed" % group_id 
-        fields = "/?fields=message,link,created_time,type,name,id," + \
+        
+        fields = '/?fields=message,link,created_time,type,name,id,' + \
                 "comments.limit(0).summary(true),shares,reactions." + \
                 "limit(0).summary(true),from"
+        
         parameters = "&limit=%s&access_token=%s" % (num_statuses, access_token)
         url = base + node + fields + parameters
 
