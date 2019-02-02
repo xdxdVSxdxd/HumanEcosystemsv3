@@ -208,7 +208,7 @@ class ApiController extends AppController
 			//use connectionmanager
 			$connection = ConnectionManager::get('default');
 
-			$querystring = 'SELECT e.entity as label , count(*) as c, AVG(c.energy) as energy, AVG(c.comfort) as comfort FROM contents c , contents_entites ce , entities e WHERE created_at >= '" . $fromdate . "' AND created_at < '" . $todate . "' AND research_id IN ( ' .  implode(",", $researcharray) .  ' ) AND ce.content_id = c.id AND e.id = ce.entity_id AND e.entity_ype_id = 1 GROUP BY e.id ORDER BY c DESC';
+			$querystring = "SELECT e.entity as label , count(*) as c, AVG(c.energy) as energy, AVG(c.comfort) as comfort FROM contents c , contents_entities ce , entities e WHERE created_at >= '" . $fromdate . "' AND created_at < '" . $todate . "' AND c.research_id IN ( " .  implode(",", $researcharray) .  " ) AND ce.content_id = c.id AND e.id = ce.entity_id AND e.entity_type_id = 1 GROUP BY e.id ORDER BY c DESC";
 
 			//echo($querystring);
 
