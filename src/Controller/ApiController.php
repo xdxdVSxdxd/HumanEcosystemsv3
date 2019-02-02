@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics'] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics','getTagsFromToDate'] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -185,6 +185,64 @@ class ApiController extends AppController
 		$this->set('_serialize', ['results']);
 
 	}
+
+
+
+
+	public function getTagsFromToDate(){
+
+		$results = new \stdClass();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('fromdate'))  && $this->request->query('fromdate')!=""   && !is_null($this->request->query('todate'))  && $this->request->query('todate')!=""    ){
+
+
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+			
+			$fromdate =  $this->request->query('fromdate');
+			$todate = $this->request->query('todate');
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+			$querystring = 'SELECT e.entity as label , count(*) as c, AVG(c.energy) as energy, AVG(c.comfort) as comfort FROM contents c , contents_entites ce , entities e WHERE created_at >= '" . $fromdate . "' AND created_at < '" . $todate . "' AND research_id IN ( ' .  implode(",", $researcharray) .  ' ) AND ce.content_id = c.id AND e.id = ce.entity_id AND e.entity_ype_id = 1 GROUP BY e.id ORDER BY c DESC';
+
+			//echo($querystring);
+
+			$resu = array();
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$o = new \stdClass();
+					$o->label = $v["label"];
+					$o->c = intval( $v["c"] );
+					$o->energy = floatval( $v["energy"] );
+					$o->comfort = floatval( $v["comfort"] );
+					$resu[] = $o;
+				}	
+			}
+			$results->children = $resu;
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
+
+
+
+
 
 
 
