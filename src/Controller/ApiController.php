@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics','getTagsFromToDate','getWordNetworkForWord'] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics','getTagsFromToDate','getWordNetworkForWord','addContent'] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -237,6 +237,165 @@ class ApiController extends AppController
 		$this->set('_serialize', ['results']);
 
 	}
+
+
+
+
+
+
+
+
+	public function addContent(){
+
+		$results = new \stdClass();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!="" && !is_null($this->request->query('content'))  && $this->request->query('content')!=""    && !is_null($this->request->query('subject'))  && $this->request->query('subject')!=""  && !is_null($this->request->query('language'))  && $this->request->query('language')!=""   ){
+
+
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+			
+			$content =  $this->request->query('content');
+			$content = str_replace("'", "\'", $content);
+			$content = str_replace('"', "\"", $content);
+			$subject =  $this->request->query('subject');
+			$subject = str_replace("'", "\'", $subject);
+			$subject = str_replace('"', "\"", $subject);
+
+			$language =  $this->request->query('language');
+			$language = str_replace("'", "\'", $language);
+			$language = str_replace('"', "\"", $language);
+
+			//use connectionmanager
+			$connection = ConnectionManager::get('default');
+
+
+			// c'è già' l'user "subject"?
+			// se no: crealo e prenditi l'ID
+			// se si: prenditi l'ID
+			$subject_id = -1;
+			$querystring = "SELECT id from subjects WHERE name='" . $subject . "' AND research_id IN (" .  implode(",", $researcharray) . ")";
+			if($querystring!=""){
+				$re = $connection->execute($querystring)->fetchAll('assoc');
+			
+				foreach ($re as $v) {
+					$subject_id = $v["id"];
+				}	
+			}
+
+			if($subject_id==-1){
+
+				$qs2 = "INSERT INTO subjects(research_element_id, research_id, name, social_id, screen_name, location, followers_count, friends_count, listed_count, language, profile_url, profile_image_url) VALUES(-1, " . $researcharray[0] . ", '" . $subject . "', -1, '" . $subject . "', 'NONE', 0, 0, 0, '" . $language . "', '', '' )";
+
+				$re = $connection->execute($qs2);
+
+				// prendi l'id
+				$re = $connection->execute("select last_insert_id() as id")->fetchAll('assoc');;
+				foreach ($re as $v) {
+					$subject_id = $v["id"];
+				}
+
+			}
+
+			// memorizza contenuto
+			$content_id = -1;
+
+			$qs2 = "INSERT INTO contents(research_id,research_element_id,subject_id,link,content,created_at,social_id,language,favorite_count,retweet_count,lat,lng,comfort,energy) VALUES( " . $researcharray[0] . ",-1," . $subject_id . ",'','" . $content . "',NOW(),-1,'" . $language .   "',0,0,-999,-999,0,0 )";
+
+			$re = $connection->execute($qs2);
+
+			$re = $connection->execute("select last_insert_id() as id");
+			foreach ($re as $v) {
+				$content_id = $v["id"];
+			}
+
+			// elabora e memorizza tag
+			preg_match("/#(\\w+)/", $content, $matches);
+			if(count($matches)>0){
+				// memorizza tags
+				foreach ($matches as $m) {
+					$id_entity = -1;
+					$m = str_replace("'", "\'", $m);
+					$m = str_replace('"', "\"", $m);
+					$q3 = "SELECT id FROM entites WHERE UPPER(entity)='" . strtoupper( $m ) . "'";
+					$re = $connection->execute($q3)->fetchAll('assoc');;
+					foreach ($re as $v) {
+						$id_entity = $v["id"];
+					}
+					if($id_entty==-1){
+						$q4 = "INSERT INTO entities(entity_type_id,entity) VALUES(1,'" . $m . "')";
+						$re = $connection->execute($q4);
+
+						$re = $connection->execute("select last_insert_id() as id");
+						foreach ($re as $v) {
+							$id_entity = $v["id"];
+						}
+					}
+
+					$q5 = "INSERT INTO contents_entities(content_id,research_id,research_element_id,entity_id) VALUES (" . $content_id . "," . $researcharray[0] . ",-1," . $id_entity . ")";
+					$re = $connection->execute($q5);
+
+				}
+				
+			}
+			// elabora e memorizza emozioni
+
+			$contents = TableRegistry::get('Contents');
+			$smileysemotions = TableRegistry::get('SmileyEmotions');
+			$wordemotions = TableRegistry::get('WordEmotions');
+			$emotions = TableRegistry::get('Emotions');
+			$emotiontypes = TableRegistry::get('EmotionTypes');
+
+			$stopwords = new \StopWords();
+
+			$sm = $smileysemotions->find('all');
+			$smileys = array();
+			foreach($sm as $s){
+				$smiley = new \stdClass();
+				$smiley->smiley = $s->smiley;
+				$smiley->emotion_id = $s->emotion_id;
+				$smileys[] = $smiley;
+	 		}
+
+	 		$wo = $wordemotions->find('all');
+			$wordsem = array();
+			foreach($wo as $w){
+				$word = new \stdClass();
+				$word->word = $w->word;
+				$word->emotion_id = $w->emotion_id;
+				$wordsem[] = $word;
+	 		}
+
+	 		$et = $emotiontypes->find('all');
+	 		$etypes = array();
+	 		foreach($et as $e){
+	 			$ett = new \stdClass();
+	 			$ett->id = $e->id;
+	 			$ett->comfort = $e->comfort;
+	 			$ett->energy = $e->energy;
+	 			$etypes[] = $ett;
+	 		}
+
+	 		$this->process_emotions($content_id,$researcharray[0],-1,$content,$smileys,$wordsem,$stopwords,$emotions,$etypes,$contents);
+
+
+			// elabora e memorizza relazioni
+
+			// use connectionmanager end
+
+		}
+
+
+
+		$this->set(compact('results'));
+		$this->set('_serialize', ['results']);
+
+	}
+
+
 
 
 
@@ -3894,6 +4053,146 @@ class ApiController extends AppController
 
 	}
 
+
+	function process_emotions($content_id,$research_id,$research_element_id,$text,$smileys,$wordsem,$stopwords,$emotions,$etypes,$contents){
+		
+		//echo("\n\n<br>-----------<br>\n");
+		
+		//$text = $text . " happy happytmeglio megliohappy ciao miao bau";
+
+		//echo($text . "<br>");
+
+
+		// smileys
+		$results_smileys = array();
+
+		$comfort_tot = 0;
+		$energy_tot = 0;
+		
+		foreach($smileys as $smiley){
+			if( preg_match('#(^|\W)'.preg_quote($smiley->smiley,'#').'($|\W)#', $text)>0 ){
+				//found
+				if(isset($results_smileys["emo-" . $smiley->emotion_id])){
+					$results_smileys["emo-" . $smiley->emotion_id] = $results_smileys["emo-" . $smiley->emotion_id] +1;
+				} else {
+					$results_smileys["emo-" . $smiley->emotion_id] = 1;
+				}
+
+				$found = false;
+				for($i = 0; $i<count($etypes)&&!$found; $i++){
+					if($etypes[$i]->id==$smiley->emotion_id){
+						$found = true;
+						$comfort_tot = $comfort_tot + $etypes[$i]->comfort;
+						$energy_tot = $energy_tot + $etypes[$i]->energy;
+					}
+				}
+
+			}
+		}
+		// smileys end
+
+
+		// clean string and remove stopwords
+			$val = $text;
+			$regex = "@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?).*$)@";
+			$val = preg_replace($regex, ' ', $val);
+			$val = preg_replace("/[^[:alnum:][:space:]]/ui", ' ', $val);
+
+			$val = strtoupper($val);
+
+			$val = str_replace("HTTPS", ' ', $val); // remove https
+			$val = str_replace("HTTP", ' ', $val); // remove http
+
+			$val = str_replace("\t", ' ', $val); // remove tabs
+			$val = str_replace("\n", ' ', $val); // remove new lines
+			$val = str_replace("\r", ' ', $val); // remove carriage returns
+
+			$val = strtolower($val);
+			$val = preg_replace("#[[:punct:]]#", " ", $val);
+			$val = preg_replace("/[^A-Za-z]/", ' ', $val);
+
+			/*
+			for($i = 0; $i<count($stopwords->stopwords); $i++){
+				$val = preg_replace('/\b' . $stopwords->stopwords[$i] . '\b/u', ' ', $val);
+			}
+			*/
+
+			$words = explode(" ", $val);
+		// clean string and remove stopwords
+
+		// analisi con words
+			$results_words = array();
+			foreach ($wordsem as $word) {
+				$regexp = '/\b(' .  $word->word . '\w*)\b/';
+
+				//echo($regexp . "<br>");
+
+				if(preg_match($regexp, $text)){
+					if(isset($results_words["emo-" . $word->emotion_id])){
+						$results_words["emo-" . $word->emotion_id] = $results_words["emo-" . $word->emotion_id] +1;
+					} else {
+						$results_words["emo-" . $word->emotion_id] = 1;
+					}
+
+					$found = false;
+					for($i = 0; $i<count($etypes)&&!$found; $i++){
+						if($etypes[$i]->id==$word->emotion_id){
+							$found = true;
+							$comfort_tot = $comfort_tot + $etypes[$i]->comfort;
+							$energy_tot = $energy_tot + $etypes[$i]->energy;
+						}
+					}
+
+				}
+			}
+		// analisi con words - fine
+
+
+		foreach ($results_smileys as $key => $value) {
+
+			$key = str_replace("emo-", " ", $key);
+			$emo = intval($key);
+
+			$e = $emotions->newEntity();
+			$e->research_id = $research_id;
+			$e->research_element_id = $research_element_id;
+			$e->content_id = $content_id;
+			$e->emotion_type_id = $emo;
+			$e->c = $value;
+
+			$emotions->save($e);
+			
+		}
+
+		foreach ($results_words as $key => $value) {
+
+			$key = str_replace("emo-", " ", $key);
+			$emo = intval($key);
+
+			$e = $emotions->newEntity();
+			$e->research_id = $research_id;
+			$e->research_element_id = $research_element_id;
+			$e->content_id = $content_id;
+			$e->emotion_type_id = $emo;
+			$e->c = $value;
+
+			$emotions->save($e);
+			
+		}
+
+		$ct = $contents->get($content_id);
+		$ct->comfort = $comfort_tot;
+		$ct->energy = $energy_tot;
+		$contents->save($ct);
+
+		/*
+		print_r($results_smileys);
+		echo("\n<br>\n");
+		print_r($results_words);
+		echo("\n\n<br><br>\n\n");
+		*/
+
+	}
 
 
 }
