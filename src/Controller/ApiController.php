@@ -28,7 +28,7 @@ class ApiController extends AppController
 
 	public function beforeFilter(Event $event){
 		parent::beforeFilter($event);
-		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics','getTagsFromToDate'] );
+		$this->Auth->allow( ['getRelations','getWordNetwork' , 'getEmotions', 'getTimeline', 'getEmotionsTimeline', 'getWordCloud' , 'getEnergyComfortDistribution', 'getGeoPoints', 'getGeoEmotionPoints','getHashtagNetwork', 'getHashtagCloud', 'getSentiment','getContentMatch','getImages','getNumberOfSubjects','getRecent','getContentByComfortEnergy','getMaxMinComfortEnergyPerResearch','getImagesByComfortEnergy','getMultipleKeywordsTimeline','getDesireTimeline','getStatistics','getSentimentSeries','getEmotionsSeries','getActivity','getTopUsers','getKeywordSeries',"getEmotionalBoundariesSeries","getMultipleMentionsSeries","getEmotionallyWeightedKeywordSeries", 'getSingleHashtagNetwork', 'getSingleHashtagStatistics','getStatisticsOnResearches','getMultipleKeywordStatistics','getSubjectsForGroups','getMultipleSubjects','getTopSubjects','getPostsPerUserID','getTopicTimeSeries','getMessagesForTagAndDate','getMessagesFromTimeAgo' , 'getLanguageStatistics','getTagsFromToDate','getWordNetworkForWord'] );
 		
 		$this->response->header('Access-Control-Allow-Origin','*');
         $this->response->header('Access-Control-Allow-Methods','*');
@@ -1005,6 +1005,172 @@ class ApiController extends AppController
 
 			$conditions = array();
 			$conditions['research_id IN'] = $researcharray;
+			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
+				$conditions['language'] = $this->request->query('language');
+			}
+
+			if( null!==$this->request->query('limit')){
+				$q1 = $contents->find('all')
+					->where( $conditions )
+	    			->select(['content','energy','comfort'])
+	    			->order(['id' => 'DESC'])
+	    			->limit(  $this->request->query('limit')  );
+			} else {
+				$q1 = $contents->find('all')
+					->where( $conditions )
+	    			->select(['content','energy','comfort']);
+			}
+
+			$renergy = array();
+			$rcomfort = array();
+
+
+			$idid = 1;
+
+			foreach($q1 as $c){
+
+				$val = $c->content;
+
+				$val = preg_replace('/#\S+ */', '', $val);
+
+				$regex = "@(https?://([-\w\.]+[-\w])+(:\d+)?(/([\w/_\.#-]*(\?\S+)?[^\.\s])?).*$)@";
+				$val = preg_replace($regex, ' ', $val);
+				$val = preg_replace("/[^[:alnum:][:space:]]/ui", ' ', $val);
+
+				$val = strtoupper($val);
+
+				$val = str_replace("HTTPS", ' ', $val); // remove https
+				$val = str_replace("HTTP", ' ', $val); // remove http
+
+				$val = str_replace("\t", ' ', $val); // remove tabs
+				$val = str_replace("\n", ' ', $val); // remove new lines
+				$val = str_replace("\r", ' ', $val); // remove carriage returns
+
+				$val = strtolower($val);
+				$val = preg_replace("#[[:punct:]]#", " ", $val);
+				$val = preg_replace("/[^A-Za-z]/", ' ', $val);
+
+				for($i = 0; $i<count($stopwords->stopwords); $i++){
+					$val = preg_replace('/\b' . $stopwords->stopwords[$i] . '\b/u', ' ', $val);
+				}
+
+				$words = explode(" ", $val);
+
+				$resultcontent = array();
+
+				for($i=0; $i<count($words); $i++){
+
+					if(trim($words[$i])!="" && strlen($words[$i])>3 ){
+						if(isset($results[$words[$i]])){
+							$results[$words[$i]] = $results[$words[$i]] + 1;
+						} else {
+							$results[$words[$i]] = 1;
+						}
+						if(isset($resultcontent[$words[$i]])){
+							$resultcontent[$words[$i]] = $resultcontent[$words[$i]] + 1;
+						} else {
+							$resultcontent[$words[$i]] = 1;
+						}
+						if(!isset($renergy[$words[$i]])){
+							$renergy[$words[$i]] = 0;
+						}
+						if($c->energy!=0){ $renergy[$words[$i]] = ($renergy[$words[$i]]+$c->energy)/2; }
+						if(!isset($rcomfort[$words[$i]])){
+							$rcomfort[$words[$i]] = 0;
+						}
+						if($c->comfort!=0){ $rcomfort[$words[$i]] = ($rcomfort[$words[$i]]+$c->comfort)/2; }
+					}
+				}
+
+				$ii = 0;
+				foreach ($resultcontent as $key1 => $value1) {
+					$jj = 0;
+					foreach ($resultcontent as $key2 => $value2) {
+						if($key1!=$key2){
+							$oo = new \stdClass();
+							$oo->id = $idid;
+							$oo->source = $key1;
+							$oo->target = $key2;
+							$oo->sourceid = $ii;
+							$oo->targetid = $jj;
+							$oo->weight = $value1 + $value2;
+							$links[] = $oo;
+							$idid++;
+						}
+						$jj++;
+					}
+					$ii++;			
+				}
+
+			}
+			//foreach
+
+			foreach ($results as $key => $value) {
+				$o = new \stdClass();
+				$o->id = $key;
+				$o->word = $key;
+				$o->weight = $value;
+				$o->energy = $renergy[$key];
+				$o->comfort = $rcomfort[$key];
+				$nodes[] = $o;
+			}
+
+			for($i = 0; $i<count($links); $i++){
+				$found1 = false;
+				$found2 = false;
+				for($j=0; $j<count($nodes)&&!$found1&&!$found2; $j++){
+					if($nodes[$j]->word==$links[$i]->source){
+						$links[$i]->sourceid = $j;
+						$found1 = true;
+					}
+					if($nodes[$j]->word==$links[$i]->target){
+						$links[$i]->targetid = $j;
+						$found2 = true;
+					}
+				}
+			}
+
+		}
+
+		$this->set(compact('nodes', 'links'));
+		$this->set('_serialize', ['nodes', 'links']);
+
+	}
+
+
+
+
+
+	function getWordNetworkForWord(){
+
+		$stopwords = new \StopWords();
+
+		$nodes = array();
+		$links = array();
+
+		$results = array();
+		$resultsrel = array();
+
+		if(!is_null($this->request->query('researches'))  && $this->request->query('researches')!=""   &&     !is_null($this->request->query('word'))  && $this->request->query('word')!="" ){
+
+			$researcharray = explode(",", $this->request->query('researches')  );
+			for($i = 0; $i<count($researcharray); $i++){
+				$researcharray[$i] = intval($researcharray[$i]);
+			}
+
+			$startingword = $this->request->query('word');
+			$startingword =  strtolower( trim($startingword) );
+			$startingword = preg_replace("/[^[:alnum:][:space:]]/u", '', $startingword);
+			$startingword = str_replace("  ", " ", $startingword);
+			$startingword = substr($startingword, 0, max(0,strlen($startingword)-1) );
+
+			$contents = TableRegistry::get('Contents');
+
+			$q1 = null;
+
+			$conditions = array();
+			$conditions['research_id IN'] = $researcharray;
+			$conditions['content LIKE'] = "%" . $startingword . "%";
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
 				$conditions['language'] = $this->request->query('language');
 			}
