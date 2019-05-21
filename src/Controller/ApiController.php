@@ -2029,6 +2029,12 @@ class ApiController extends AppController
 
 			}
 
+			if( null!==$this->request->query('search') &&  $this->request->query('search')!="XXX" ){
+
+				$querystring = $querystring . " AND UPPER(content) LIKE '%" .  strtoupper( str_replace("'", "", $this->request->query('search'))  ) . "%'";
+
+			}
+
 			if( null!==$this->request->query('mode')){
 
 				$interval = "1 YEAR";
@@ -2106,6 +2112,13 @@ class ApiController extends AppController
 			if( null!==$this->request->query('language') &&  $this->request->query('language')!="XXX" ){
 
 				$querystring = $querystring . " AND language='" . str_replace("'", "", $this->request->query('language')) . "'";
+
+			}
+
+
+			if( null!==$this->request->query('search') &&  $this->request->query('search')!="XXX" ){
+
+				$querystring = $querystring . " AND UPPER(content) LIKE '%" .  strtoupper( str_replace("'", "", $this->request->query('search'))  ) . "%'";
 
 			}
 
