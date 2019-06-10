@@ -1242,6 +1242,7 @@ class ApiController extends AppController
 				}
 
 				$ii = 0;
+				/*
 				foreach ($resultcontent as $key1 => $value1) {
 					$jj = 0;
 					foreach ($resultcontent as $key2 => $value2) {
@@ -1260,6 +1261,27 @@ class ApiController extends AppController
 					}
 					$ii++;			
 				}
+				*/
+
+				$arraykeys = array_keys($resultcontent);
+
+				for($i = 0; $i<count($arraykeys)-2; $i++){
+					$ii = $i;
+					$jj = $i +1;
+					$key1 = $arraykeys[$i];
+					$key2 = $arraykeys[$i+1];
+							$oo = new \stdClass();
+							$oo->id = $idid;
+							$oo->source = $key1;
+							$oo->target = $key2;
+							$oo->sourceid = $ii;
+							$oo->targetid = $jj;
+							$oo->weight = $resultcontent[$arraykeys[$i]] + $resultcontent[$arraykeys[$i+1]];
+							$links[] = $oo;
+							$idid++;
+				}
+
+				
 
 			}
 			//foreach
@@ -1408,6 +1430,7 @@ class ApiController extends AppController
 				}
 
 				$ii = 0;
+				/*
 				foreach ($resultcontent as $key1 => $value1) {
 					$jj = 0;
 					foreach ($resultcontent as $key2 => $value2) {
@@ -1425,6 +1448,25 @@ class ApiController extends AppController
 						$jj++;
 					}
 					$ii++;			
+				}
+				*/
+
+				$arraykeys = array_keys($resultcontent);
+
+				for($i = 0; $i<count($arraykeys)-2; $i++){
+					$ii = $i;
+					$jj = $i +1;
+					$key1 = $arraykeys[$i];
+					$key2 = $arraykeys[$i+1];
+							$oo = new \stdClass();
+							$oo->id = $idid;
+							$oo->source = $key1;
+							$oo->target = $key2;
+							$oo->sourceid = $ii;
+							$oo->targetid = $jj;
+							$oo->weight = $resultcontent[$arraykeys[$i]] + $resultcontent[$arraykeys[$i+1]];
+							$links[] = $oo;
+							$idid++;
 				}
 
 			}
